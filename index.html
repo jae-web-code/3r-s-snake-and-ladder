@@ -244,5 +244,12 @@ async function restart(){
 function closeQuestion(){if(roomData?.status==="answering"&&roomData.turn===mySlot)return;$("modal").classList.remove("show");}
 window.connectFirebase=connectFirebase;window.findOpponent=findOpponent;window.leaveRoom=leaveRoom;window.newQuestion=newQuestion;window.roll=roll;window.restart=restart;window.closeQuestion=closeQuestion;
 </script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+</script>
 </body>
 </html>
