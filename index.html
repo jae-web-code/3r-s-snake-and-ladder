@@ -29,11 +29,11 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
   <p class="small">Connect using your study Firebase project, then tap Find Opponent. The game automatically pairs two waiting participants. No room code is shown.</p>
   <div class="row">
    <label>Your player name <input id="myName" value="Player" maxlength="18"></label>
-   <label>Firebase apiKey <input id="apiKey" placeholder="Paste apiKey" autocomplete="off"></label>
-   <label>Firebase authDomain <input id="authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off"></label>
-   <label>Firebase databaseURL <input id="databaseURL" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off"></label>
-   <label>Firebase projectId <input id="projectId" placeholder="your-project-id" autocomplete="off"></label>
-   <label>Firebase appId <input id="appId" placeholder="Paste appId" autocomplete="off"></label>
+   <label>Firebase apiKey <input id="apiKey" value="AIzaSyCoCMcgw4nn8I7ioW6xLhrGA9HkIrvwXsY" autocomplete="off"></label>
+   <label>Firebase authDomain <input id="authDomain" value="r-s-7f116.firebaseapp.com" autocomplete="off"></label>
+   <label>Firebase databaseURL <input id="databaseURL" value="https://r-s-7f116-default-rtdb.firebaseio.com/" autocomplete="off"></label>
+   <label>Firebase projectId <input id="projectId" value="r-s-7f116" autocomplete="off"></label>
+   <label>Firebase appId <input id="appId" value="1:300470219986:web:c785c937a170ba876c690b" autocomplete="off"></label>
   </div>
   <div class="controls" style="margin-top:10px"><button id="connectBtn" onclick="connectFirebase()">Connect</button><span id="connectionStatus" class="small">Not connected</span></div>
   <p id="roomStatus" class="status">Connect to Firebase to start.</p>
@@ -196,4 +196,51 @@ function showOnlineQuestion(q,canAnswer){
 }
 async function newQuestion(){
  if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="ready")return;
- const cat=$(
+ const cat=$("category").value;let pool=questions.map((q,id)=>({...q,id})).filter(q=>cat==="mixed"||q.c===cat);
+ const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;
+ const q=fresh[Math.floor(Math.random()*fresh.length)];
+ const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
+ const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+ await update(roomRef,{status:"answering",question:{...q,options},used:[...used,q.id],lastMessage:"Question selected."});
+}
+async function submitAnswer(choice){
+ if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=="answering")return;answered=true;
+ const q=roomData.question;const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+ if(choice===q.a){
+  const players=roomData.players;players[mySlot].correct=(players[mySlot].correct||0)+1;
+  await update(roomRef,{players,status:"rolling",lastMessage:"Correct answer! "+playerName(mySlot)+" may roll."});
+  $("feedback").textContent="✅ Correct!";$("solution").textContent="Solution: "+q.s;$("modal").classList.remove("show");
+ }else{
+  $("feedback").textContent="❌ Incorrect. Correct answer: "+q.a;$("solution").textContent="Solution: "+q.s;
+  await update(roomRef,{status:"wrong",lastMessage:playerName(mySlot)+" answered incorrectly. Turn passes to the other player."});
+  setTimeout(async()=>{if(roomData?.status==="wrong"&&roomData.turn===mySlot){await update(roomRef,{turn:1-mySlot,status:"ready",question:null,lastMessage:"Turn passed after an incorrect answer."});}},1400);
+ }
+}
+async function roll(){
+ if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="rolling")return;
+ const die=Math.floor(Math.random()*6)+1;const players=roomData.players;let pos=Math.min(50,(players[mySlot].position||0)+die);let msg=playerName(mySlot)+" rolled "+die+" and moved to square "+pos+".";
+ if(snakes[pos]){pos=snakes[pos];msg+=" Snake! Down to "+pos+"."}if(ladders[pos]){pos=ladders[pos];msg+=" Ladder! Up to "+pos+"."}
+ players[mySlot].position=pos;
+ if(pos>=50){await (await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")).update(roomRef,{players,status:"finished",winner:mySlot,lastMessage:msg});return}
+ await (await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")).update(roomRef,{players,turn:1-mySlot,status:"ready",question:null,lastMessage:msg});
+}
+async function leaveRoom(){
+ await stopQueueWatch();
+ if(unsubscribe){unsubscribe();unsubscribe=null;}
+ roomRef=null;roomData=null;mySlot=null;matchId=null;currentQuestion=null;answered=false;
+ $("modal").classList.remove("show");$("getQ").disabled=true;$("rollBtn").disabled=true;$("restartBtn").disabled=true;
+ $("cancelBtn").disabled=true;$("findBtn").disabled=!db;
+ if(db&&authUser){try{const {ref,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(ref(db,"matchmaking"),cur=>{if(cur?.waiting?.uid===authUser.uid)cur.waiting=null;return cur;});}catch(e){}}
+ setStatus("You left the match. Tap Find Opponent to play again.");
+}
+async function restart(){
+ if(!roomRef||!roomData||mySlot!==0)return;
+ if(!confirm("Restart this match for both players?"))return;
+ const {set}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+ await set(roomRef,{players:roomData.players.map(p=>({...p,position:0,correct:0})),turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"The match was restarted."});
+}
+function closeQuestion(){if(roomData?.status==="answering"&&roomData.turn===mySlot)return;$("modal").classList.remove("show");}
+window.connectFirebase=connectFirebase;window.findOpponent=findOpponent;window.leaveRoom=leaveRoom;window.newQuestion=newQuestion;window.roll=roll;window.restart=restart;window.closeQuestion=closeQuestion;
+</script>
+</body>
+</html>
