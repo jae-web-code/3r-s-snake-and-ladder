@@ -1,0 +1,19 @@
+{
+  "name": "3R's Snake and Ladder",
+  "short_name": "3R's",
+  "description": "Rise, Run, and Race!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#dff7ff",
+  "theme_color": "#2196f3",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
