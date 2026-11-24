@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3R's Snake and Ladder — 50 Questions</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#dff7ff,#eef3ff);color:#17324d}
+.wrap{max-width:1150px;margin:auto;padding:16px}.top,.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(22px,4vw,32px)}.sub{color:#557;margin:6px 0 14px}
+.panel{background:#fff;border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 5px 20px #0001}
+button,input,select{font:inherit;border-radius:10px;padding:10px;border:1px solid #bdc9dc}
+button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+.status{text-align:center;font-weight:bold;font-size:17px;margin:12px 0}.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;background:#264a7a;padding:5px;border-radius:12px}
+.cell{position:relative;min-height:55px;background:#fff;border-radius:5px;padding:4px;font-size:12px;font-weight:bold}.cell:nth-child(odd){background:#f0f8ff}.snake{outline:2px solid #e66}.ladder{outline:2px solid #39a66a}
+.token{display:inline-block;border-radius:20px;color:white;padding:3px 5px;margin:2px;font-size:10px}.p1{background:#e74c3c}.p2{background:#8e44ad}
+.legend{text-align:center;margin:8px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:14px;z-index:5}.modal.show{display:flex}
+.card{background:#fff;border-radius:18px;padding:20px;max-width:650px;width:100%;max-height:90vh;overflow:auto}.choices{display:grid;gap:8px;margin:12px 0}.choices button{text-align:left;background:#edf3ff;color:#17324d}.choices button.correct{background:#b9f3cc}.choices button.wrong{background:#ffc3c3}
+.small{font-size:13px;color:#567}.scoreboard{width:100%;border-collapse:collapse}.scoreboard th,.scoreboard td{text-align:left;padding:8px;border-bottom:1px solid #e3e8f0}
+@media(max-width:600px){.cell{min-height:39px;font-size:9px;padding:3px}.token{font-size:8px;padding:2px 3px}.wrap{padding:8px}.panel{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><div><h1>🎲 3R's Snake and Ladder</h1><div class="sub">Rise • Run • Race — Mathematics + Science</div></div><button id="restartBtn" onclick="restart()" disabled>↻ Restart Game</button></div>
+ <div class="panel">
+  <h2>🌐 Online Multiplayer</h2>
+  <p class="small">Connect using your study Firebase project, then tap Find Opponent. The game automatically pairs two waiting participants. No room code is shown.</p>
+  <div class="row">
+   <label>Your player name <input id="myName" value="Player" maxlength="18"></label>
+   <label>Firebase apiKey <input id="apiKey" placeholder="Paste apiKey" autocomplete="off"></label>
+   <label>Firebase authDomain <input id="authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off"></label>
+   <label>Firebase databaseURL <input id="databaseURL" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off"></label>
+   <label>Firebase projectId <input id="projectId" placeholder="your-project-id" autocomplete="off"></label>
+   <label>Firebase appId <input id="appId" placeholder="Paste appId" autocomplete="off"></label>
+  </div>
+  <div class="controls" style="margin-top:10px"><button id="connectBtn" onclick="connectFirebase()">Connect</button><span id="connectionStatus" class="small">Not connected</span></div>
+  <p id="roomStatus" class="status">Connect to Firebase to start.</p>
+  <div class="controls"><button id="findBtn" onclick="findOpponent()" disabled>🔎 Find Opponent</button><button id="cancelBtn" onclick="leaveRoom()" disabled>Cancel / Leave</button><label>Question category <select id="category"><option value="mixed">Mixed (Math + Science)</option><option value="math">Mathematics only</option><option value="science">Science only</option></select></label><button id="getQ" onclick="newQuestion()" disabled>🎯 Get Question</button><button id="rollBtn" onclick="roll()" disabled>🎲 Roll Dice</button></div>
+  <div class="legend">🔴 Player 1 &nbsp; 🟣 Player 2 &nbsp; 🪜 Ladder &nbsp; 🐍 Snake</div>
+ </div>
+ <div id="board" class="board"></div>
+ <div class="panel"><h2>🏆 Leaderboard</h2><table class="scoreboard"><thead><tr><th>Rank</th><th>Player</th><th>Correct answers</th><th>Square</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table><p class="small">Leaderboard scores are for this game session and reset when Restart is selected.</p></div>
+ <div class="panel small"><b>How to play:</b> Two players take turns. Choose a question category, answer correctly, then roll the dice. A wrong answer ends the current turn. Snakes move players down and ladders move them up. First player to reach square 50 wins.</div>
+</div>
+<div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><button onclick="closeQuestion()" style="background:#68758a">Close</button></div><h2 id="question"></h2><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
+<script type="module">
+
+const questions = [
+{c:"math",q:"Simplify 4(2x−3)−3(x+5).",a:"5x − 27",s:"8x−12−3x−15 = 5x−27"},
+{c:"math",q:"Solve 5(2x−3)=3x+20.",a:"x = 5",s:"10x−15=3x+20; 7x=35; x=5"},
+{c:"math",q:"Solve (x+1)/(x−2)=3, where x ≠ 2.",a:"x = 7/2",s:"x+1=3(x−2); x+1=3x−6; 7=2x; x=7/2"},
+{c:"math",q:"Solve (x−2)/3+(x+1)/2=4.",a:"x = 5",s:"2(x−2)+3(x+1)=24; 5x−1=24; x=5"},
+{c:"math",q:"Factor x²−11x+28.",a:"(x−7)(x−4)",s:"x²−11x+28=(x−7)(x−4)"},
+{c:"math",q:"Factor 6x²+11x+3.",a:"(3x+1)(2x+3)",s:"6x²+9x+2x+3=(3x+1)(2x+3)"},
+{c:"math",q:"Solve x²−9x+20=0.",a:"x = 4 or x = 5",s:"(x−4)(x−5)=0; x=4 or x=5"},
+{c:"math",q:"Solve x²−49=0.",a:"x = −7 or x = 7",s:"x²=49; x=±7"},
+{c:"math",q:"Simplify (x²−16)/(x+4), where x ≠ −4.",a:"x − 4",s:"(x−4)(x+4)/(x+4)=x−4"},
+{c:"math",q:"Solve 2/x+1/(x+1)=1, where x ≠ 0 and x ≠ −1.",a:"x = 1 ± √3",s:"2(x+1)+x=x(x+1); x²−2x−2=0; x=1±√3"},
+{c:"math",q:"Solve 4x−7 > 2x+9.",a:"x > 8",s:"2x>16; x>8"},
+{c:"math",q:"Solve x²−7x+12 ≤ 0.",a:"3 ≤ x ≤ 4",s:"(x−3)(x−4)≤0, so x lies between the roots inclusive."},
+{c:"math",q:"Solve the system 2x+y=11 and x−y=1.",a:"x = 4, y = 3",s:"Add equations: 3x=12, x=4. Then 4−y=1, so y=3."},
+{c:"math",q:"Find the slope through (−2,3) and (4,15).",a:"m = 2",s:"m=(15−3)/(4−(−2))=12/6=2"},
+{c:"math",q:"Find the y-intercept of 5x−4y=20.",a:"y = −5",s:"Set x=0: −4y=20, so y=−5"},
+{c:"math",q:"If f(x)=3x²−4x+2, find f(−3).",a:"41",s:"3(9)+12+2=41"},
+{c:"math",q:"Solve x⁴−13x²+36=0.",a:"x = −3, −2, 2, or 3",s:"Let u=x²: (u−4)(u−9)=0; x=±2 or ±3"},
+{c:"math",q:"If 2^(x+1)=64, find x.",a:"x = 5",s:"64=2⁶, so x+1=6 and x=5"},
+{c:"math",q:"Solve log₂(x)=5.",a:"x = 32",s:"x=2⁵=32"},
+{c:"math",q:"Simplify (a³b⁴)²/(ab²)³.",a:"a³b²",s:"a⁶b⁸/a³b⁶=a³b²"},
+{c:"math",q:"Solve x²+4x−12=0.",a:"x = −6 or x = 2",s:"(x+6)(x−2)=0"},
+{c:"math",q:"Solve 2x²−3x−4=0 using the quadratic formula.",a:"x = (3 ± √41)/4",s:"x=[3±√(9+32)]/4=[3±√41]/4"},
+{c:"math",q:"Find the sum and product of the roots of 3x²−8x+5=0.",a:"Sum = 8/3; product = 5/3",s:"Sum=−b/a=8/3; product=c/a=5/3"},
+{c:"math",q:"Find the 12th term of 5, 9, 13, 17, …",a:"49",s:"a₁₂=5+(12−1)(4)=49"},
+{c:"math",q:"Two consecutive integers have a sum of 73. Find the smaller integer.",a:"36",s:"x+(x+1)=73; 2x=72; x=36"},
+{c:"math",q:"A rectangle has length x+5, width x, and area 84 square units. Find its dimensions.",a:"Width 7; length 12",s:"x(x+5)=84; (x+12)(x−7)=0; use x=7"},
+{c:"math",q:"Solve |2x−3|=7.",a:"x = −2 or x = 5",s:"2x−3=7 or −7, giving x=5 or x=−2"},
+{c:"math",q:"Solve −5 < 3x+1 ≤ 13.",a:"−2 < x ≤ 4",s:"−6<3x≤12; divide by 3"},
+{c:"math",q:"y varies directly as x. If y=24 when x=8, find y when x=15.",a:"45",s:"y=kx; k=24/8=3; y=3(15)=45"},
+{c:"math",q:"Solve 1/(x−1)+1/(x+1)=3/4, where x ≠ ±1.",a:"x = −1/3 or x = 3",s:"2x/(x²−1)=3/4; 3x²−8x−3=0; (3x+1)(x−3)=0"},
+{c:"science",q:"A vehicle accelerates from 4 m/s to 20 m/s in 4 seconds. Find acceleration.",a:"4 m/s²",s:"a=(20−4)/4=4 m/s²"},
+{c:"science",q:"A 5 kg object accelerates at 3 m/s². Find the force.",a:"15 N",s:"F=ma=5(3)=15 N"},
+{c:"science",q:"A machine performs 600 J of work in 12 seconds. Find its power.",a:"50 W",s:"P=W/t=600/12=50 W"},
+{c:"science",q:"A 2 kg object moves at 6 m/s. Find its kinetic energy.",a:"36 J",s:"KE=½mv²=½(2)(6²)=36 J"},
+{c:"science",q:"A 3 kg object is lifted 5 m. Find gravitational potential energy using g=10 m/s².",a:"150 J",s:"PE=mgh=3(10)(5)=150 J"},
+{c:"science",q:"Find the weight of an 8 kg object on Earth using g=10 m/s².",a:"80 N",s:"W=mg=8(10)=80 N"},
+{c:"science",q:"A 25 N force moves an object 4 m in the force's direction. Find the work.",a:"100 J",s:"W=Fd=25(4)=100 J"},
+{c:"science",q:"Find the momentum of a 2 kg object moving at 7 m/s.",a:"14 kg·m/s",s:"p=mv=2(7)=14 kg·m/s"},
+{c:"science",q:"An object has mass 540 g and volume 200 cm³. Find its density.",a:"2.7 g/cm³",s:"Density=mass/volume=540/200=2.7 g/cm³"},
+{c:"science",q:"A 600 N force acts on an area of 3 m². Find pressure.",a:"200 Pa",s:"P=F/A=600/3=200 Pa"},
+{c:"science",q:"A wave has frequency 5 Hz and wavelength 4 m. Find its speed.",a:"20 m/s",s:"v=fλ=5(4)=20 m/s"},
+{c:"science",q:"A source produces 120 waves in 10 seconds. Find frequency.",a:"12 Hz",s:"f=120/10=12 Hz"},
+{c:"science",q:"A 6 Ω resistor has a 2 A current. Find the voltage.",a:"12 V",s:"V=IR=2(6)=12 V"},
+{c:"science",q:"A 24 V source is connected to an 8 Ω resistor. Find current.",a:"3 A",s:"I=V/R=24/8=3 A"},
+{c:"science",q:"Two resistors of 4 Ω and 6 Ω are connected in series. Find total resistance.",a:"10 Ω",s:"Rₜ=4+6=10 Ω"},
+{c:"science",q:"A device operates at 12 V and draws 2 A. Find electrical power.",a:"24 W",s:"P=VI=12(2)=24 W"},
+{c:"science",q:"A gas occupies 4 L at 100 kPa. Its volume decreases to 2 L at constant temperature. Find final pressure.",a:"200 kPa",s:"P₁V₁=P₂V₂; 100(4)=P₂(2); P₂=200 kPa"},
+{c:"science",q:"A gas occupies 2 L at 300 K. Temperature rises to 450 K at constant pressure. Find final volume.",a:"3 L",s:"V₁/T₁=V₂/T₂; V₂=2(450)/300=3 L"},
+{c:"science",q:"A gas has P₁=100 kPa, V₁=3 L, T₁=300 K. If P₂=150 kPa and T₂=450 K, find V₂.",a:"3 L",s:"P₁V₁/T₁=P₂V₂/T₂; V₂=(100·3·450)/(300·150)=3 L"},
+{c:"science",q:"How much heat raises 0.5 kg of water by 10°C? Use c=4200 J/(kg·°C).",a:"21,000 J",s:"Q=mcΔT=0.5(4200)(10)=21,000 J"}
+];;
+// Three realistic distractors for each question, in the same order as the question bank.
+const wrongChoices = {0: ["5x − 3", "11x − 27", "5x − 18"], 1: ["x = 3", "x = 7", "x = 5/7"], 2: ["x = 5/2", "x = 7", "x = 3/2"], 3: ["x = 4", "x = 6", "x = 7"], 4: ["(x−7)(x+4)", "(x−8)(x−3)", "(x−7)(x−3)"], 5: ["(3x+3)(2x+1)", "(6x+1)(x+3)", "(3x−1)(2x−3)"], 6: ["x = −4 or x = −5", "x = 4 or x = 5", "x = −4 or x = 5"], 7: ["x = −49 or x = 49", "x = 7 only", "x = −7 only"], 8: ["x + 4", "x − 16", "x − 8"], 9: ["x = 2 ± √3", "x = 1 ± 3", "x = −1 ± √3"], 10: ["x > 6", "x < 8", "x ≥ 8"], 11: ["x ≤ 3 or x ≥ 4", "3 < x < 4", "x ≤ 4"], 12: ["x = 3, y = 4", "x = 4, y = 5", "x = 5, y = 3"], 13: ["m = 3", "m = 1/2", "m = −2"], 14: ["y = 5", "y = 4", "y = −4"], 15: ["29", "35", "41"], 16: ["x = −4, −3, 3, 4", "x = −3 or 3", "x = −2 or 2"], 17: ["x = 4", "x = 6", "x = 7"], 18: ["x = 16", "x = 25", "x = 64"], 19: ["a³b⁸", "a⁶b²", "a³b⁴"], 20: ["x = −2 or x = 6", "x = −6 or x = −2", "x = 2 or x = 6"], 21: ["x = (3 ± √25)/4", "x = (−3 ± √41)/4", "x = (3 ± √37)/4"], 22: ["Sum = −8/3; product = 5/3", "Sum = 8/3; product = −5/3", "Sum = 5/3; product = 8/3"], 23: ["45", "48", "53"], 24: ["35", "37", "38"], 25: ["Width 6; length 11", "Width 8; length 13", "Width 7; length 10"], 26: ["x = −5 or x = 2", "x = −2 or x = 3", "x = 2 or x = 5"], 27: ["−2 ≤ x < 4", "−4 < x ≤ 2", "−2 < x < 4"], 28: ["36", "40", "48"], 29: ["x = −3 or x = 1/3", "x = −3 or x = 1/3", "x = −1 or x = 3"], 30: ["5 m/s²", "3 m/s²", "6 m/s²"], 31: ["8 N", "12 N", "18 N"], 32: ["40 W", "60 W", "72 W"], 33: ["12 J", "18 J", "72 J"], 34: ["15 J", "100 J", "200 J"], 35: ["8 N", "18 N", "800 N"], 36: ["25 J", "29 J", "120 J"], 37: ["9 kg·m/s", "12 kg·m/s", "16 kg·m/s"], 38: ["2.4 g/cm³", "2.7 g/cm²", "3.7 g/cm³"], 39: ["180 Pa", "300 Pa", "1,800 Pa"], 40: ["9 m/s", "15 m/s", "25 m/s"], 41: ["10 Hz", "11 Hz", "15 Hz"], 42: ["3 V", "8 V", "18 V"], 43: ["2 A", "4 A", "16 A"], 44: ["2 Ω", "6 Ω", "24 Ω"], 45: ["12 W", "14 W", "36 W"], 46: ["100 kPa", "150 kPa", "400 kPa"], 47: ["2 L", "2.5 L", "4 L"], 48: ["2 L", "4.5 L", "6 L"], 49: ["2,100 J", "4,200 J", "42,000 J"]};
+
+const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
+let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false;
+const $=id=>document.getElementById(id);
+function playerName(i){return roomData?.players?.[i]?.name || ("Player "+(i+1))}
+function setStatus(t){$("roomStatus").textContent=t}
+function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+async function connectFirebase(){
+ try{
+  $("connectionStatus").textContent="Connecting…";
+  const cfg={apiKey:$("apiKey").value.trim(),authDomain:$("authDomain").value.trim(),databaseURL:$("databaseURL").value.trim(),projectId:$("projectId").value.trim(),appId:$("appId").value.trim()};
+  if(Object.values(cfg).some(v=>!v)){throw new Error("Fill in all five Firebase config fields first.")}
+  const {initializeApp,getApps}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js");
+  const {getAuth,signInAnonymously}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js");
+  const {getDatabase}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+  fb=getApps().length?getApps()[0]:initializeApp(cfg);
+  const auth=getAuth(fb); const cred=await signInAnonymously(auth); authUser=cred.user; db=getDatabase(fb);
+  $("connectionStatus").textContent="Connected ✓";
+  $("findBtn").disabled=false;
+  $("roomStatus").textContent="Connected. Tap Find Opponent when both participants are ready.";
+ }catch(e){$("connectionStatus").textContent="Connection failed";alert("Firebase connection error: "+e.message+"\nCheck your config, Anonymous sign-in, and Realtime Database setup.")}
+}
+async function findOpponent(){
+ if(!db||!authUser||searching||roomRef)return;
+ try{
+  const {ref,runTransaction,onValue,off}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+  searching=true;$("findBtn").disabled=true;$("cancelBtn").disabled=false;
+  setStatus("🔎 Looking for another participant… Keep this page open.");
+  const queueRef=ref(db,"matchmaking");
+  const name=($("myName").value.trim()||"Player").slice(0,18);
+  await runTransaction(queueRef,cur=>{
+   cur=cur||{waiting:null,matches:{}};
+   cur.matches=cur.matches||{};
+   const waiting=cur.waiting;
+   if(waiting&&waiting.uid!==authUser.uid&&Date.now()-Number(waiting.at||0)<180000){
+    const id="match_"+authUser.uid+"_"+Math.random().toString(36).slice(2,9);
+    cur.matches[id]={players:[{uid:waiting.uid,name:waiting.name,position:0,correct:0},{uid:authUser.uid,name,position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"Both participants connected. Game started."};
+    cur.waiting=null;
+   }else{
+    cur.waiting={uid:authUser.uid,name,at:Date.now()};
+   }
+   return cur;
+  });
+  const findMyMatch=data=>Object.entries(data?.matches||{}).find(([id,m])=>m?.players?.some(pl=>pl?.uid===authUser.uid));
+  const {get}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+  let snap=await get(queueRef),found=findMyMatch(snap.val());
+  if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));return;}
+  queueUnsubscribe=onValue(queueRef,async snap=>{
+   const found=findMyMatch(snap.val());
+   if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));}
+  });
+ }catch(e){searching=false;$("findBtn").disabled=false;$("cancelBtn").disabled=true;setStatus("Matchmaking error: "+e.message);}
+}
+async function stopQueueWatch(){
+ if(queueUnsubscribe){queueUnsubscribe();queueUnsubscribe=null;}
+ searching=false;
+}
+async function watchRoom(id,slot){
+ if(unsubscribe)unsubscribe();
+ await stopQueueWatch();
+ const {ref,onValue}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
+ matchId=id;mySlot=slot;roomRef=ref(db,"matchmaking/matches/"+id);
+ $("roomStatus").textContent="Matched! You are Player "+(slot+1)+".";
+ $("cancelBtn").disabled=false;$("restartBtn").disabled=false;
+ unsubscribe=onValue(roomRef,snap=>{if(!snap.exists()){setStatus("Match ended or no longer exists.");return}roomData=snap.val();renderRoom()});
+}
+function renderRoom(){
+ if(!roomData)return;
+ const p=roomData.players||[];
+ $("roomStatus").textContent="Online match • You are Player "+(mySlot+1)+" • 2/2 participants";
+ const board=$("board");board.innerHTML="";
+ for(let n=50;n>=1;n--){const c=document.createElement("div");c.className="cell";if(snakes[n])c.classList.add("snake");if(ladders[n])c.classList.add("ladder");c.innerHTML="<span>"+n+(snakes[n]?" 🐍":ladders[n]?" 🪜":"")+"</span>";p.forEach((pl,i)=>{if(pl&&pl.position===n)c.innerHTML+='<span class="token p'+(i+1)+'">'+(i===0?"P1":"P2")+"</span>"});board.appendChild(c)}
+ const rows=[0,1].sort((a,b)=>(p[b]?.correct||0)-(p[a]?.correct||0)||(p[b]?.position||0)-(p[a]?.position||0));
+ $("leaderboard").innerHTML=rows.map((i,rank)=>`<tr><td>${rank+1}</td><td>${escapeHtml(p[i]?.name||"Waiting…")}</td><td>${p[i]?.correct||0}</td><td>${p[i]?.position||0}</td><td>${roomData.winner===i?"🏆 Winner":""}</td></tr>`).join("");
+ const isMyTurn=roomData.turn===mySlot, ready=!!p[1];
+ $("getQ").disabled=!(ready&&isMyTurn&&roomData.status==="ready"&&roomData.winner==null);
+ $("rollBtn").disabled=!(isMyTurn&&roomData.status==="rolling"&&roomData.winner==null);
+ if(roomData.status==="waiting")setStatus("Waiting for another participant…");
+ else if(roomData.winner!==null&&roomData.winner!==undefined)setStatus("🏆 "+playerName(roomData.winner)+" wins!");
+ else if(roomData.status==="ready")setStatus(isMyTurn?"Your turn! Get a question.":playerName(roomData.turn)+" is choosing a question.");
+ else if(roomData.status==="answering")setStatus(isMyTurn?"Your turn: answer the question.":"Waiting for "+playerName(roomData.turn)+" to answer.");
+ else if(roomData.status==="rolling")setStatus(isMyTurn?"Correct answer! Roll the dice.":"Waiting for "+playerName(roomData.turn)+" to roll.");
+ else if(roomData.status==="wrong")setStatus(roomData.lastMessage||"Wrong answer. Turn passed.");
+ if(roomData.status==="answering"&&roomData.question)showOnlineQuestion(roomData.question,isMyTurn);
+ else {$("modal").classList.remove("show")}
+}
+function showOnlineQuestion(q,canAnswer){
+ if(currentQuestion?.id===q.id&&$("modal").classList.contains("show"))return;
+ currentQuestion=q;answered=false;$("qbadge").textContent=playerName(roomData.turn)+" • "+(q.c==="math"?"Mathematics":"Science")+" • Question "+(q.id+1)+"/50";$("question").textContent=q.q;
+ const box=$("choices");box.innerHTML="";
+ q.options.forEach(option=>{const btn=document.createElement("button");btn.textContent=option;btn.disabled=!canAnswer;btn.onclick=()=>submitAnswer(option);box.appendChild(btn)});
+ $("feedback").textContent=canAnswer?"Choose the correct answer.":"Your opponent is answering…";$("solution").textContent="";$("modal").classList.add("show");
+}
+async function newQuestion(){
+ if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="ready")return;
