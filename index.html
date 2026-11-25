@@ -107,7 +107,7 @@ const questions = [
 const wrongChoices = {0: ["x = 6", "x = 7", "x = 9"], 1: ["x = 3", "x = 19", "x = 20"], 2: ["x = 6", "x = 7", "x = 9"], 3: ["x = 11", "x = 25", "x = 35"], 4: ["x = 5", "x = 7", "x = 11"], 5: ["x = 6", "x = 8", "x = 9"], 6: ["x = 4", "x = 6", "x = 7"], 7: ["x = 4", "x = 5", "x = 7"], 8: ["x = 6", "x = 8", "x = 9"], 9: ["x = 5", "x = 7", "x = 8"], 10: ["x = 4", "x = 6", "x = 7"], 11: ["x = 8", "x = 10", "x = 14"], 12: ["x = 4", "x = 6", "x = 7"], 13: ["x = 5", "x = 7", "x = 8"], 14: ["x = 4", "x = 6", "x = 7"], 15: ["x = 4", "x = 5", "x = 7"], 16: ["x = 2", "x = 4", "x = 5"], 17: ["x = 5", "x = 6", "x = 8"], 18: ["x = 3", "x = 4", "x = 6"], 19: ["x = 2", "x = 4", "x = 6"], 20: ["x = 12", "x = 18", "x = 27"], 21: ["x = 16", "x = 20", "x = 22"], 22: ["x = 10", "x = 15", "x = 18"], 23: ["x = 4", "x = 6", "x = 10"], 24: ["x = 6", "x = 7", "x = 9"], 25: ["x = 7 only", "x = −7 only", "x = 49 or x = −49"], 26: ["x = 4 only", "x = −4 only", "x = 8 or x = −8"], 27: ["x = 2 or x = 3", "x = −2 or x = 3", "x = 2 or x = −3"], 28: ["x = −3 or x = −4", "x = 3 or x = −4", "x = −3 or x = 4"], 29: ["x = 3 only", "x = −3 only", "x = 9 or x = −9"], 30: ["5 m/s²", "3 m/s²", "6 m/s²"], 31: ["8 N", "12 N", "18 N"], 32: ["40 W", "60 W", "72 W"], 33: ["12 J", "18 J", "72 J"], 34: ["15 J", "100 J", "200 J"], 35: ["8 N", "18 N", "800 N"], 36: ["25 J", "29 J", "120 J"], 37: ["9 kg·m/s", "12 kg·m/s", "16 kg·m/s"], 38: ["2.4 g/cm³", "2.7 g/cm²", "3.7 g/cm³"], 39: ["180 Pa", "300 Pa", "1,800 Pa"], 40: ["9 m/s", "15 m/s", "25 m/s"], 41: ["10 Hz", "11 Hz", "15 Hz"], 42: ["3 V", "8 V", "18 V"], 43: ["2 A", "4 A", "16 A"], 44: ["2 Ω", "6 Ω", "24 Ω"], 45: ["12 W", "14 W", "36 W"], 46: ["100 kPa", "150 kPa", "400 kPa"], 47: ["2 L", "2.5 L", "4 L"], 48: ["2 L", "4.5 L", "6 L"], 49: ["2,100 J", "4,200 J", "42,000 J"]};
 
 const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
-let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false, timerLoop=null, animationLock=false, lastPositions=[0,0], botMode=false;
+let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false, timerLoop=null, animationLock=false, lastPositions=[0,0], botMode=false, sessionId=null, botActionKey=null;
 const $=id=>document.getElementById(id);
 window.addEventListener("error",event=>{
  const msg=event?.message||"Unknown JavaScript error";
@@ -129,15 +129,12 @@ function makeBoard(){
    let mark=snakes[n]?'<span class="snake-art" aria-label="snake">🐍</span>':ladders[n]?'<span class="ladder-art" aria-label="ladder">🪜</span>':'';
    c.innerHTML='<span>'+n+'</span>'+mark;board.appendChild(c);});
  }
- const ns="http://www.w3.org/2000/svg";const art=document.createElementNS(ns,"svg");art.setAttribute("class","board-art");art.setAttribute("viewBox","0 0 1000 500");art.setAttribute("preserveAspectRatio","none");
- const xy=n=>{const k=n-1,row=Math.floor(k/10),offset=k%10,col=row%2===0?offset:9-offset;return [col*100+50,450-row*100];};
- Object.entries(snakes).forEach(([head,tail])=>{const [x1,y1]=xy(+head),[x2,y2]=xy(tail),dx=x2-x1,dy=y2-y1;const d=`M ${x1} ${y1} C ${x1+dx*.45+55} ${y1+dy*.25-35}, ${x1+dx*.55-55} ${y1+dy*.75+35}, ${x2} ${y2}`;const path=document.createElementNS(ns,"path");path.setAttribute("d",d);path.setAttribute("class","snake-path");art.appendChild(path);const headDot=document.createElementNS(ns,"circle");headDot.setAttribute("cx",x1);headDot.setAttribute("cy",y1);headDot.setAttribute("r",15);headDot.setAttribute("fill","#c83f36");art.appendChild(headDot);});
- Object.entries(ladders).forEach(([bottom,top])=>{const [x1,y1]=xy(+bottom),[x2,y2]=xy(top),dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1,px=-dy/len*13,py=dx/len*13;for(const side of [-1,1]){const rail=document.createElementNS(ns,"line");rail.setAttribute("x1",x1+px*side);rail.setAttribute("y1",y1+py*side);rail.setAttribute("x2",x2+px*side);rail.setAttribute("y2",y2+py*side);rail.setAttribute("class","ladder-rail");art.appendChild(rail);}for(let t=.12;t<.95;t+=.16){const rung=document.createElementNS(ns,"line");rung.setAttribute("x1",x1+dx*t+px);rung.setAttribute("y1",y1+dy*t+py);rung.setAttribute("x2",x1+dx*t-px);rung.setAttribute("y2",y1+dy*t-py);rung.setAttribute("class","ladder-rung");art.appendChild(rung);}});
- board.appendChild(art);
+ // Keep the animated snake and ladder markers inside their own squares.
+ // Large crossing SVG paths made the board difficult to read on phones.
 }
 function paintTokens(){
  const board=$("board");board.querySelectorAll(".token").forEach(t=>t.remove());
- (roomData?.players||[]).forEach((pl,i)=>{if(!pl)return;const cell=board.querySelector('[data-square="'+(pl.position||0)+'"]');if(!cell)return;
+ (roomData?.players||[]).forEach((pl,i)=>{if(!pl)return;const cell=board.querySelector('[data-square="'+Math.max(1,pl.position||0)+'"]');if(!cell)return;
   const token=document.createElement("span");token.className="token p"+(i+1);token.textContent=i===0?"P1":"P2";cell.appendChild(token);
  });
 }
@@ -195,20 +192,34 @@ async function findOpponent(){
  if(!db||!authUser||searching||roomRef)return;
  try{
   const {ref,runTransaction,onValue,get}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
-  searching=true;$("findBtn").disabled=true;$("cancelBtn").disabled=false;setStatus("🔎 Looking for another participant… Bot joins after 10 seconds.");
+  searching=true;sessionId=authUser.uid+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,9);
+  $("findBtn").disabled=true;$("cancelBtn").disabled=false;setStatus("🔎 Looking for another participant… Bot joins after 10 seconds.");
   const queueRef=ref(db,"matchmaking");const name=($("myName").value.trim()||"Player").slice(0,18);const searchStarted=Date.now();
-  await runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};const waiting=cur.waiting;
-   if(waiting&&waiting.uid!==authUser.uid&&Date.now()-Number(waiting.at||0)<180000){const id="match_"+authUser.uid+"_"+Math.random().toString(36).slice(2,9);cur.matches[id]={players:[{uid:waiting.uid,name:waiting.name,position:0,correct:0},{uid:authUser.uid,name,position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"Game started."};cur.waiting=null;}
-   else cur.waiting={uid:authUser.uid,name,at:Date.now()};return cur;});
-  const findMyMatch=data=>Object.entries(data?.matches||{}).find(([id,m])=>m?.players?.some(pl=>pl?.uid===authUser.uid));
-  const snap=await get(queueRef);let found=findMyMatch(snap.val());if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));return;}
-  queueUnsubscribe=onValue(queueRef,async snap=>{const hit=findMyMatch(snap.val());if(hit){const [id,m]=hit;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));}});
+  await runTransaction(queueRef,cur=>{
+   cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};
+   const waiting=cur.waiting;
+   if(waiting?.sessionId&&waiting.uid!==authUser.uid&&waiting.sessionId!==sessionId&&Date.now()-Number(waiting.at||0)<180000){
+    const id="match_"+Date.now()+"_"+Math.random().toString(36).slice(2,10);
+    cur.matches[id]={createdAt:Date.now(),players:[{uid:waiting.uid,sessionId:waiting.sessionId,name:waiting.name,position:0,correct:0},{uid:authUser.uid,sessionId,name,position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"Game started."};cur.waiting=null;
+   }else cur.waiting={uid:authUser.uid,sessionId,name,at:Date.now()};
+   return cur;
+  });
+  const findMyMatch=data=>Object.entries(data?.matches||{}).find(([id,m])=>m?.players?.some(pl=>pl?.sessionId===sessionId));
+  const snap=await get(queueRef);let found=findMyMatch(snap.val());
+  if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.sessionId===sessionId));return;}
+  queueUnsubscribe=onValue(queueRef,async snap=>{const hit=findMyMatch(snap.val());if(hit){const [id,m]=hit;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.sessionId===sessionId));}});
   setTimeout(async()=>{
    if(!searching||roomRef||Date.now()-searchStarted<9500)return;
    try{
-    await runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};if(cur.waiting?.uid!==authUser.uid)return cur;
-     const id="bot_"+authUser.uid+"_"+Date.now();cur.matches[id]={players:[{uid:authUser.uid,name,position:0,correct:0},{uid:"BOT",name:"3R's Bot",position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,bot:true,lastMessage:"No opponent found. Bot joined the game!"};cur.waiting=null;return cur;});
-    const latest=await get(queueRef);const hit=findMyMatch(latest.val());if(hit){const [id,m]=hit;await stopQueueWatch();botMode=true;await watchRoom(id,0);}
+    await runTransaction(queueRef,cur=>{
+     cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};
+     if(cur.waiting?.sessionId!==sessionId)return cur;
+     const id="bot_"+sessionId;
+     cur.matches[id]={createdAt:Date.now(),players:[{uid:authUser.uid,sessionId,name,position:0,correct:0},{uid:"BOT",sessionId:"BOT_"+id,name:"3R's Bot",position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,bot:true,lastMessage:"No opponent found. Bot joined the game!"};cur.waiting=null;return cur;
+    });
+    const latest=await get(queueRef);const hit=findMyMatch(latest.val());
+    if(hit){const [id,m]=hit;await stopQueueWatch();botMode=true;await watchRoom(id,m.players.findIndex(pl=>pl?.sessionId===sessionId));}
+    else if(searching&&!roomRef)setStatus("Still searching. Please tap Cancel / Leave and try again.");
    }catch(e){setStatus("Could not start bot match: "+e.message);}
   },10000);
  }catch(e){searching=false;$("findBtn").disabled=false;$("cancelBtn").disabled=true;setStatus("Matchmaking error: "+e.message);}
@@ -242,8 +253,8 @@ function renderRoom(previous){
  else if(roomData.status==='correct'||roomData.status==='wrong'){
   clearInterval(timerLoop);const q=roomData.question;$('modal').classList.add('show');
   if(q){$('qbadge').textContent=playerName(roomData.turn)+' • '+(q.c==='math'?'Mathematics':'Science')+' • Question '+(q.id+1)+'/50';$('question').textContent=q.q;$('choices').innerHTML='';$('feedback').innerHTML=roomData.status==='correct'?'<div class="feedback-mark" style="color:#159447">✓</div><b>Correct!</b>':'<div class="feedback-mark" style="color:#d83232">✕</div><b>'+(roomData.lastMessage||'Incorrect or time is up.')+'</b>';$('solution').textContent=roomData.status==='correct'?'Solution: '+q.s:'Correct answer: '+q.a+'\nSolution: '+q.s;}
-}else{clearInterval(timerLoop);$('modal').classList.remove('show');currentQuestion=null;}
- if(botMode&&roomData.turn===1&&roomData.winner==null){if(roomData.status==='ready')setTimeout(()=>botStartQuestion(),650);else if(roomData.status==='answering'&&roomData.question&&!roomData.botAnswering)setTimeout(()=>botAnswer(),2500);}
+ }else{clearInterval(timerLoop);$('modal').classList.remove('show');currentQuestion=null;}
+ if(botMode&&roomData.turn===1&&roomData.winner==null){if(roomData.status==='ready'){const key='ready-'+(roomData.used||[]).length;if(botActionKey!==key){botActionKey=key;setTimeout(()=>botStartQuestion(),650);}}else if(roomData.status==='answering'&&roomData.question){const key='answer-'+roomData.question.id+'-'+roomData.question.startedAt;if(botActionKey!==key){botActionKey=key;setTimeout(()=>botAnswer(),2500);}}}
 }
 function showOnlineQuestion(q,canAnswer){
  if(currentQuestion?.id===q.id&&currentQuestion?.startedAt===q.startedAt&&$("modal").classList.contains("show"))return;
@@ -294,10 +305,10 @@ async function botRoll(){if(roomData?.status==="rolling")await automaticRoll(1);
 async function leaveRoom(){
  await stopQueueWatch();
  if(unsubscribe){unsubscribe();unsubscribe=null;}
- roomRef=null;roomData=null;mySlot=null;matchId=null;currentQuestion=null;answered=false;
+ roomRef=null;roomData=null;mySlot=null;matchId=null;currentQuestion=null;answered=false;sessionId=null;botActionKey=null;
  $("modal").classList.remove("show");$("restartBtn").disabled=true;$("setupPanel").classList.remove("setup-hidden");$("turnPanel").style.display="none";$("getQuestionBtn").disabled=true;
  $("cancelBtn").disabled=true;$("findBtn").disabled=!db;
- if(db&&authUser){try{const {ref,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(ref(db,"matchmaking"),cur=>{if(cur?.waiting?.uid===authUser.uid)cur.waiting=null;return cur;});}catch(e){}}
+ if(db&&authUser){try{const {ref,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(ref(db,"matchmaking"),cur=>{if(cur?.waiting?.sessionId===sessionId)cur.waiting=null;return cur;});}catch(e){}}
  setStatus("You left the match. Tap Find Opponent to play again.");
 }
 async function restart(){
@@ -320,5 +331,3 @@ catch(e){$("scriptStatus").textContent="Game setup error: "+(e?.message||String(
 </script>
 </body>
 </html>
- 
- 
