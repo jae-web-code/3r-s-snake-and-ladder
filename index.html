@@ -239,8 +239,9 @@ function renderRoom(previous){
  $('leaderboard').innerHTML=rows.map((i,rank)=>`<tr><td>${rank+1}</td><td>${escapeHtml(p[i]?.name||"Waiting…")}</td><td>${p[i]?.correct||0}</td><td>${p[i]?.position||0}</td><td>${roomData.winner===i?"🏆 Winner":""}</td></tr>`).join('');
  const ready=roomData.status==='ready'&&roomData.winner==null;
  $('turnPanel').style.display=roomData.winner==null?'block':'none';
- $('getQuestionBtn').style.display=(!botMode&&isMyTurn&&ready)?'inline-block':'none';
- $('getQuestionBtn').disabled=!(!botMode&&isMyTurn&&ready);
+ const canGetQuestion=isMyTurn&&ready&&(!botMode||mySlot===0);
+ $('getQuestionBtn').style.display=canGetQuestion?'inline-block':'none';
+ $('getQuestionBtn').disabled=!canGetQuestion;
  $('turnTitle').textContent=roomData.winner!=null?'Game finished':(isMyTurn?'Your turn':playerName(roomData.turn)+"'s turn");
  $('turnHint').textContent=ready?(isMyTurn?'Tap Get Question when you are ready.':(botMode&&roomData.turn===1?'The bot is getting ready…':'Waiting for your opponent…')):(roomData.status==='answering'?(isMyTurn?'Choose your answer before time runs out.':playerName(roomData.turn)+' is answering…'):(roomData.status==='correct'?'Correct answer! Read the explanation.':roomData.status==='wrong'?'Incorrect answer. Read the explanation.':'The player is moving…'));
  if(roomData.winner!==null&&roomData.winner!==undefined)setStatus('🏆 '+playerName(roomData.winner)+' wins!');
