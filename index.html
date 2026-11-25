@@ -296,7 +296,10 @@ function renderRoom(previous){
  $('getQuestionBtn').disabled=!canGetQuestion;
  $('turnTitle').textContent=roomData.winner!=null?'Game finished':(isMyTurn?'Your turn':playerName(roomData.turn)+"'s turn");
  $('turnHint').textContent=ready?(isMyTurn?'Tap Get Question when you are ready.':(botMode&&roomData.turn===1?'The bot is getting ready…':'Waiting for your opponent…')):(roomData.status==='answering'?(isMyTurn?'Choose your answer before time runs out.':playerName(roomData.turn)+' is answering…'):(roomData.status==='correct'?'Correct answer! Read the explanation.':roomData.status==='wrong'?'Incorrect answer. Read the explanation.':'The player is moving…'));
- if(roomData.winner!==null&&roomData.winner!==undefined)setStatus('🏆 '+playerName(roomData.winner)+' wins!');
+ if(roomData.winner!==null&&roomData.winner!==undefined){
+  setStatus('🏆 '+playerName(roomData.winner)+' wins!');
+  if(researchEnabled()) saveResearchResult();
+ }
  else if(roomData.status==='answering')setStatus(isMyTurn?'Your turn — answer before time runs out!':playerName(roomData.turn)+' is answering.');
  else if(roomData.status==='ready')setStatus(isMyTurn?'Your turn! Tap Get Question when ready.':playerName(roomData.turn)+' is preparing.');
  else if(roomData.status==='correct')setStatus('✅ '+(roomData.lastMessage||'Correct answer!'));
