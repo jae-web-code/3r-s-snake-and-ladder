@@ -333,6 +333,16 @@ await update(roomRef,{
 async function submitAnswer(choice,timedOut=false){
  if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=='answering')return;answered=true;clearInterval(timerLoop);
  const q=roomData.question;const {update,runTransaction}=await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js');const correct=!timedOut&&choice===q.a;
+ if (researchEnabled()) {
+  const responseTimeMs = Math.max(0, Date.now() - q.startedAt);
+
+  researchRun.attempts.push({
+    questionId: q.id + 1,
+    category: q.c === "math" ? "Mathematics" : "Science",
+    outcome: timedOut ? "timeout" : correct ? "correct" : "wrong",
+    responseTimeMs: responseTimeMs
+  });
+ }
  if(correct){const players=roomData.players.map(x=>({...x}));players[mySlot].correct=(players[mySlot].correct||0)+1;
   await update(roomRef,{players,status:'correct',lastMessage:'Correct! Read the solution before the die rolls.'});
   await new Promise(r=>setTimeout(r,7000));
