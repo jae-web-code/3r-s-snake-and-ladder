@@ -39,9 +39,14 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
   <p id="roomStatus" class="status">Connect to Firebase to start.</p>
   <div class="controls"><button id="findBtn" onclick="findOpponent()" disabled>🔎 Find Opponent</button><button id="cancelBtn" onclick="leaveRoom()" disabled>Cancel / Leave</button></div>
  </div>
+ <div class="panel" id="turnPanel" style="display:none;text-align:center">
+  <h2 id="turnTitle">Your turn</h2>
+  <p id="turnHint" class="small">Tap when you are ready.</p>
+  <button id="getQuestionBtn" onclick="newQuestion()" disabled>📝 Get Question</button>
+ </div>
  <div class="board-area"><div id="board" class="board"></div></div>
  <div class="panel"><h2>🏆 Leaderboard</h2><table class="scoreboard"><thead><tr><th>Rank</th><th>Player</th><th>Correct answers</th><th>Square</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table><p class="small">Leaderboard scores are for this game session and reset when Restart is selected.</p></div>
- <div class="panel small"><b>How to play:</b> Two players take turns. Choose a question category, answer correctly, then roll the dice. A wrong answer ends the current turn. Snakes move players down and ladders move them up. First player to reach square 50 wins.</div>
+ <div class="panel small"><b>How to play:</b> Two players take turns. Tap Get Question when you are ready. Answer correctly to roll the single die automatically. A wrong answer or timeout ends the turn. Snakes move players down and ladders move them up. First player to reach square 50 wins.</div>
 </div>
 <div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><span id="timerText" class="small">20s</span></div><h2 id="question"></h2><div class="timerbar"><div id="timerFill" class="timerfill"></div></div><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
 <script>
@@ -98,7 +103,7 @@ const questions = [
 {c:"science",q:"A gas has P₁=100 kPa, V₁=3 L, T₁=300 K. If P₂=150 kPa and T₂=450 K, find V₂.",a:"3 L",s:"P₁V₁/T₁=P₂V₂/T₂; V₂=(100·3·450)/(300·150)=3 L"},
 {c:"science",q:"How much heat raises 0.5 kg of water by 10°C? Use c=4200 J/(kg·°C).",a:"21,000 J",s:"Q=mcΔT=0.5(4200)(10)=21,000 J"}
 ];;
-// Three realistic distractors for each question, in the same order as the question bank.
+ // Three realistic distractors for each question, in the same order as the question bank.
 const wrongChoices = {0: ["x = 6", "x = 7", "x = 9"], 1: ["x = 3", "x = 19", "x = 20"], 2: ["x = 6", "x = 7", "x = 9"], 3: ["x = 11", "x = 25", "x = 35"], 4: ["x = 5", "x = 7", "x = 11"], 5: ["x = 6", "x = 8", "x = 9"], 6: ["x = 4", "x = 6", "x = 7"], 7: ["x = 4", "x = 5", "x = 7"], 8: ["x = 6", "x = 8", "x = 9"], 9: ["x = 5", "x = 7", "x = 8"], 10: ["x = 4", "x = 6", "x = 7"], 11: ["x = 8", "x = 10", "x = 14"], 12: ["x = 4", "x = 6", "x = 7"], 13: ["x = 5", "x = 7", "x = 8"], 14: ["x = 4", "x = 6", "x = 7"], 15: ["x = 4", "x = 5", "x = 7"], 16: ["x = 2", "x = 4", "x = 5"], 17: ["x = 5", "x = 6", "x = 8"], 18: ["x = 3", "x = 4", "x = 6"], 19: ["x = 2", "x = 4", "x = 6"], 20: ["x = 12", "x = 18", "x = 27"], 21: ["x = 16", "x = 20", "x = 22"], 22: ["x = 10", "x = 15", "x = 18"], 23: ["x = 4", "x = 6", "x = 10"], 24: ["x = 6", "x = 7", "x = 9"], 25: ["x = 7 only", "x = −7 only", "x = 49 or x = −49"], 26: ["x = 4 only", "x = −4 only", "x = 8 or x = −8"], 27: ["x = 2 or x = 3", "x = −2 or x = 3", "x = 2 or x = −3"], 28: ["x = −3 or x = −4", "x = 3 or x = −4", "x = −3 or x = 4"], 29: ["x = 3 only", "x = −3 only", "x = 9 or x = −9"], 30: ["5 m/s²", "3 m/s²", "6 m/s²"], 31: ["8 N", "12 N", "18 N"], 32: ["40 W", "60 W", "72 W"], 33: ["12 J", "18 J", "72 J"], 34: ["15 J", "100 J", "200 J"], 35: ["8 N", "18 N", "800 N"], 36: ["25 J", "29 J", "120 J"], 37: ["9 kg·m/s", "12 kg·m/s", "16 kg·m/s"], 38: ["2.4 g/cm³", "2.7 g/cm²", "3.7 g/cm³"], 39: ["180 Pa", "300 Pa", "1,800 Pa"], 40: ["9 m/s", "15 m/s", "25 m/s"], 41: ["10 Hz", "11 Hz", "15 Hz"], 42: ["3 V", "8 V", "18 V"], 43: ["2 A", "4 A", "16 A"], 44: ["2 Ω", "6 Ω", "24 Ω"], 45: ["12 W", "14 W", "36 W"], 46: ["100 kPa", "150 kPa", "400 kPa"], 47: ["2 L", "2.5 L", "4 L"], 48: ["2 L", "4.5 L", "6 L"], 49: ["2,100 J", "4,200 J", "42,000 J"]};
 
 const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
@@ -172,7 +177,8 @@ async function findOpponent(){
   setTimeout(async()=>{
    if(!searching||roomRef||Date.now()-searchStarted<9500)return;
    try{
-    await runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};if(cur.waiting?.uid!==authUser.uid)return cur;
+    await
+     runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};if(cur.waiting?.uid!==authUser.uid)return cur;
      const id="bot_"+authUser.uid+"_"+Date.now();cur.matches[id]={players:[{uid:authUser.uid,name,position:0,correct:0},{uid:"BOT",name:"3R's Bot",position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,bot:true,lastMessage:"No opponent found. Bot joined the game!"};cur.waiting=null;return cur;});
     const latest=await get(queueRef);const hit=findMyMatch(latest.val());if(hit){const [id,m]=hit;await stopQueueWatch();botMode=true;await watchRoom(id,0);}
    }catch(e){setStatus("Could not start bot match: "+e.message);}
@@ -188,70 +194,68 @@ async function watchRoom(id,slot){
 }
 function renderRoom(previous){
  if(!roomData)return;const p=roomData.players||[];const isMyTurn=roomData.turn===mySlot;
- if(!$("board").children.length)makeBoard();
+ if(!$('board').children.length)makeBoard();
  if(previous&&previous.players){p.forEach((pl,i)=>{const from=previous.players[i]?.position||0,to=pl?.position||0;if(to!==from){const landed=roomData.landing&&i===roomData.lastMovedPlayer?roomData.landing:to;animateMove(i,from,landed,to);}});}else paintTokens();
  const rows=[0,1].sort((a,b)=>(p[b]?.correct||0)-(p[a]?.correct||0)||(p[b]?.position||0)-(p[a]?.position||0));
- $("leaderboard").innerHTML=rows.map((i,rank)=>`<tr><td>${rank+1}</td><td>${escapeHtml(p[i]?.name||"Waiting…")}</td><td>${p[i]?.correct||0}</td><td>${p[i]?.position||0}</td><td>${roomData.winner===i?"🏆 Winner":""}</td></tr>`).join("");
- if(roomData.winner!==null&&roomData.winner!==undefined)setStatus("🏆 "+playerName(roomData.winner)+" wins!");
- else if(roomData.status==="answering")setStatus(isMyTurn?"Your turn — answer before time runs out!":playerName(roomData.turn)+" is answering.");
- else if(roomData.status==="ready")setStatus(isMyTurn?"Your turn! A question is coming…":playerName(roomData.turn)+" is preparing a question.");
- else if(roomData.status==="wrong"){setStatus("❌ "+(roomData.lastMessage||"Incorrect. Turn passed."));$("feedback").innerHTML='<div class="feedback-mark" style="color:#d83232">✕</div><b>Incorrect or time is up.</b>';}
- else if(roomData.status==="moving")setStatus(roomData.lastMessage||"Moving across the board…");
- if(roomData.status==="answering"&&roomData.question){showOnlineQuestion(roomData.question,isMyTurn);if(isMyTurn)startTimer();else clearInterval(timerLoop);}
- else if(roomData.status==="wrong"){clearInterval(timerLoop);$("modal").classList.add("show");}
- else{clearInterval(timerLoop);$("modal").classList.remove("show");currentQuestion=null;}
- if(botMode&&roomData.turn===1&&roomData.winner==null){if(roomData.status==="ready")setTimeout(()=>botStartQuestion(),650);else if(roomData.status==="answering"&&roomData.question&&!roomData.botAnswering)setTimeout(()=>botAnswer(),2500);else if(roomData.status==="rolling")setTimeout(()=>botRoll(),700);}
- // Automatically create a question at the start of each turn for the human player.
- if(!botMode&&isMyTurn&&roomData.status==="ready"&&roomData.winner==null&&!roomData.autoQuestionPending){roomData.autoQuestionPending=true;setTimeout(()=>{if(roomData?.status==="ready"&&roomData.turn===mySlot)newQuestion();},450);}
+ $('leaderboard').innerHTML=rows.map((i,rank)=>`<tr><td>${rank+1}</td><td>${escapeHtml(p[i]?.name||"Waiting…")}</td><td>${p[i]?.correct||0}</td><td>${p[i]?.position||0}</td><td>${roomData.winner===i?"🏆 Winner":""}</td></tr>`).join('');
+ const ready=roomData.status==='ready'&&roomData.winner==null;
+ $('turnPanel').style.display=roomData.winner==null?'block':'none';
+ $('getQuestionBtn').style.display=(!botMode&&isMyTurn&&ready)?'inline-block':'none';
+ $('getQuestionBtn').disabled=!(!botMode&&isMyTurn&&ready);
+ $('turnTitle').textContent=roomData.winner!=null?'Game finished':(isMyTurn?'Your turn':playerName(roomData.turn)+"'s turn");
+ $('turnHint').textContent=ready?(isMyTurn?'Tap Get Question when you are ready.':(botMode&&roomData.turn===1?'The bot is getting ready…':'Waiting for your opponent…')):(roomData.status==='answering'?(isMyTurn?'Choose your answer before time runs out.':playerName(roomData.turn)+' is answering…'):(roomData.status==='correct'?'Correct answer! Read the explanation.':roomData.status==='wrong'?'Incorrect answer. Read the explanation.':'The player is moving…'));
+ if(roomData.winner!==null&&roomData.winner!==undefined)setStatus('🏆 '+playerName(roomData.winner)+' wins!');
+ else if(roomData.status==='answering')setStatus(isMyTurn?'Your turn — answer before time runs out!':playerName(roomData.turn)+' is answering.');
+ else if(roomData.status==='ready')setStatus(isMyTurn?'Your turn! Tap Get Question when ready.':playerName(roomData.turn)+' is preparing.');
+ else if(roomData.status==='correct')setStatus('✅ '+(roomData.lastMessage||'Correct answer!'));
+ else if(roomData.status==='wrong')setStatus('❌ '+(roomData.lastMessage||'Incorrect. Turn passed.'));
+ else if(roomData.status==='moving')setStatus(roomData.lastMessage||'Moving across the board…');
+ if(roomData.status==='answering'&&roomData.question){showOnlineQuestion(roomData.question,isMyTurn);if(isMyTurn)startTimer();else clearInterval(timerLoop);}
+ else if(roomData.status==='correct'||roomData.status==='wrong'){
+  clearInterval(timerLoop);const q=roomData.question;$('modal').classList.add('show');
+  if(q){$('qbadge').textContent=playerName(roomData.turn)+' • '+(q.c==='math'?'Mathematics':'Science')+' • Question '+(q.id+1)+'/50';$('question').textContent=q.q;$('choices').innerHTML='';$('feedback').innerHTML=roomData.status==='correct'?'<div class="feedback-mark" style="color:#159447">✓</div><b>Correct!</b>':'<div class="feedback-mark" style="color:#d83232">✕</div><b>'+(roomData.lastMessage||'Incorrect or time is up.')+'</b>';$('solution').textContent=roomData.status==='correct'?'Solution: '+q.s:'Correct answer: '+q.a+'\nSolution: '+q.s;}
+ }else{clearInterval(timerLoop);$('modal').classList.remove('show');currentQuestion=null;}
+ if(botMode&&roomData.turn===1&&roomData.winner==null){if(roomData.status==='ready')setTimeout(()=>botStartQuestion(),650);else if(roomData.status==='answering'&&roomData.question&&!roomData.botAnswering)setTimeout(()=>botAnswer(),2500);}
 }
 function showOnlineQuestion(q,canAnswer){
  if(currentQuestion?.id===q.id&&currentQuestion?.startedAt===q.startedAt&&$("modal").classList.contains("show"))return;
  currentQuestion=q;answered=false;$("qbadge").textContent=playerName(roomData.turn)+" • "+(q.c==="math"?"Mathematics":"Science")+" • Question "+(q.id+1)+"/50";$("question").textContent=q.q;
  const box=$("choices");box.innerHTML="";q.options.forEach(option=>{const btn=document.createElement("button");btn.textContent=option;btn.disabled=!canAnswer;btn.onclick=()=>submitAnswer(option,false);box.appendChild(btn);});
  $("feedback").innerHTML="";$("solution").textContent="";$("modal").classList.add("show");
-  }
- async function newQuestion(){
+}
+async function newQuestion(){
  if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="ready")return;
+ $("getQuestionBtn").disabled=true;
  const cat="mixed";let pool=questions.map((q,id)=>({...q,id})).filter(q=>cat==="mixed"||q.c===cat);const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;
  const q=fresh[Math.floor(Math.random()*fresh.length)];const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
  const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await update(roomRef,{status:"answering",question:{...q,options,startedAt:Date.now()},used:[...used,q.id],lastMessage:"Question started."});
 }
 async function submitAnswer(choice,timedOut=false){
- if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=="answering")return;answered=true;clearInterval(timerLoop);
- const q=roomData.question;const {update,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");const correct=!timedOut&&choice===q.a;
+ if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=='answering')return;answered=true;clearInterval(timerLoop);
+ const q=roomData.question;const {update,runTransaction}=await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js');const correct=!timedOut&&choice===q.a;
  if(correct){const players=roomData.players.map(x=>({...x}));players[mySlot].correct=(players[mySlot].correct||0)+1;
-  $("feedback").innerHTML='<div class="feedback-mark" style="color:#159447">✓</div><b>Correct!</b>';
-  await new Promise(r=>setTimeout(r,850));await update(roomRef,{players,status:"moving",lastMessage:"Correct! The die is rolling automatically."});await automaticRoll(mySlot);
+  await update(roomRef,{players,status:'correct',lastMessage:'Correct! Read the solution before the die rolls.'});
+  await new Promise(r=>setTimeout(r,7000));
+  await update(roomRef,{status:'moving',lastMessage:'Correct! The die is rolling automatically.'});
+  await new Promise(r=>setTimeout(r,150));await automaticRoll(mySlot);
  }else{
-  $("feedback").innerHTML='<div class="feedback-mark" style="color:#d83232">✕</div><b>'+(timedOut?"Time is up!":"Incorrect!")+"</b>";$("solution").textContent="Correct answer: "+q.a+"\nSolution: "+q.s;
-  await update(roomRef,{status:"wrong",lastMessage:timedOut?playerName(mySlot)+" ran out of time. Turn passes.":playerName(mySlot)+" answered incorrectly. Turn passes."});
-  setTimeout(async()=>{await runTransaction(roomRef,cur=>{if(cur&&cur.status==="wrong"&&cur.turn===mySlot){cur.turn=1-mySlot;cur.status="ready";cur.question=null;cur.lastMessage="Turn passed.";}return cur;});},1200);
+  await update(roomRef,{status:'wrong',lastMessage:timedOut?'Time is up! The turn passes.':'Incorrect! The turn passes.'});
+  await new Promise(r=>setTimeout(r,7000));
+  await runTransaction(roomRef,cur=>{if(cur&&cur.status==='wrong'&&cur.turn===mySlot){cur.turn=1-mySlot;cur.status='ready';cur.question=null;cur.lastMessage='Turn passed.';}return cur;});
  }
-}
-async function automaticRoll(slot){
- if(!roomRef||!roomData||roomData.turn!==slot||roomData.status!=="moving")return;
- const {runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");let result;
- await runTransaction(roomRef,cur=>{if(!cur||cur.turn!==slot||cur.status!=="moving")return cur;const die=Math.floor(Math.random()*6)+1;const old=cur.players[slot].position||0;let landed=Math.min(50,old+die);let final=landed;let msg=playerName(slot)+" rolled "+die+" and moved from "+old+" to "+landed+".";if(snakes[landed]){final=snakes[landed];msg+=" Snake! Slither down to "+final+".";}else if(ladders[landed]){final=ladders[landed];msg+=" Ladder! Climb up to "+final+".";}cur.players[slot].position=final;cur.lastMessage=msg;cur.die=die;cur.landing=landed;cur.lastMovedPlayer=slot;cur.status=final>=50?"finished":"ready";cur.question=null;if(final>=50)cur.winner=slot;else cur.turn=1-slot;result={old,landed,final,die};return cur;});
- if(result){setStatus("🎲 Rolled "+result.die+"! "+(snakes[result.landed]?"🐍 Sliding down the snake!":ladders[result.landed]?"🪜 Climbing the ladder!":"Moving across the board…"));}
-}
-async function botStartQuestion(){
- if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=="ready")return;
- const pool=questions.map((q,id)=>({...q,id}));const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;const q=fresh[Math.floor(Math.random()*fresh.length)];const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
- const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await update(roomRef,{status:"answering",question:{...q,options,startedAt:Date.now()},used:[...used,q.id],lastMessage:"Bot is answering."});
-}
-async function botAnswer(){
- if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=="answering"||roomData.botAnswering)return;
- roomData.botAnswering=true;const q=roomData.question;const correct=Math.random()<0.72;const choice=correct?q.a:q.options.find(x=>x!==q.a);
- const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
- if(correct){const players=roomData.players.map(x=>({...x}));players[1].correct=(players[1].correct||0)+1;await update(roomRef,{players,status:"moving",lastMessage:"Bot answered correctly. Rolling…"});await new Promise(r=>setTimeout(r,800));await automaticRoll(1);}
- else{await update(roomRef,{status:"wrong",lastMessage:"Bot answered incorrectly. Turn passes."});setTimeout(async()=>{const {runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(roomRef,cur=>{if(cur?.status==="wrong"&&cur.turn===1){cur.turn=0;cur.status="ready";cur.question=null;}return cur;});},1000);}
+ async function botAnswer(){
+ if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=='answering'||roomData.botAnswering)return;
+ roomData.botAnswering=true;const q=roomData.question;const correct=Math.random()<0.72;
+ const {update,runTransaction}=await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js');
+ if(correct){const players=roomData.players.map(x=>({...x}));players[1].correct=(players[1].correct||0)+1;await update(roomRef,{players,status:'correct',lastMessage:'The bot answered correctly.'});await new Promise(r=>setTimeout(r,7000));await update(roomRef,{status:'moving',lastMessage:'The bot is rolling automatically.'});await new Promise(r=>setTimeout(r,150));await automaticRoll(1);}
+ else{await update(roomRef,{status:'wrong',lastMessage:'The bot answered incorrectly. Turn passes.'});await new Promise(r=>setTimeout(r,7000));await runTransaction(roomRef,cur=>{if(cur?.status==='wrong'&&cur.turn===1){cur.turn=0;cur.status='ready';cur.question=null;cur.lastMessage='Turn passed.';}return cur;});}
 }
 async function botRoll(){if(roomData?.status==="rolling")await automaticRoll(1);}
 async function leaveRoom(){
  await stopQueueWatch();
  if(unsubscribe){unsubscribe();unsubscribe=null;}
  roomRef=null;roomData=null;mySlot=null;matchId=null;currentQuestion=null;answered=false;
- $("modal").classList.remove("show");$("restartBtn").disabled=true;$("setupPanel").classList.remove("setup-hidden");
+ $("modal").classList.remove("show");$("restartBtn").disabled=true;$("setupPanel").classList.remove("setup-hidden");$("turnPanel").style.display="none";$("getQuestionBtn").disabled=true;
  $("cancelBtn").disabled=true;$("findBtn").disabled=!db;
  if(db&&authUser){try{const {ref,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(ref(db,"matchmaking"),cur=>{if(cur?.waiting?.uid===authUser.uid)cur.waiting=null;return cur;});}catch(e){}}
  setStatus("You left the match. Tap Find Opponent to play again.");
