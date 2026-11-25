@@ -242,8 +242,9 @@ async function submitAnswer(choice,timedOut=false){
   await update(roomRef,{status:'wrong',lastMessage:timedOut?'Time is up! The turn passes.':'Incorrect! The turn passes.'});
   await new Promise(r=>setTimeout(r,7000));
   await runTransaction(roomRef,cur=>{if(cur&&cur.status==='wrong'&&cur.turn===mySlot){cur.turn=1-mySlot;cur.status='ready';cur.question=null;cur.lastMessage='Turn passed.';}return cur;});
- }
- async function botAnswer(){
+  }
+}
+async function botAnswer(){
  if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=='answering'||roomData.botAnswering)return;
  roomData.botAnswering=true;const q=roomData.question;const correct=Math.random()<0.72;
  const {update,runTransaction}=await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js');
