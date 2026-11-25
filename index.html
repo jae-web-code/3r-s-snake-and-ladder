@@ -108,7 +108,59 @@ const wrongChoices = {0: ["x = 6", "x = 7", "x = 9"], 1: ["x = 3", "x = 19", "x 
 
 const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
 let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false, timerLoop=null, animationLock=false, lastPositions=[0,0], botMode=false, sessionId=null, botActionKey=null;
-const $=id=>document.getElementById(id);
+// RESEARCH TRACKING
+let researchRun = {
+  matchStartedAt: null,
+  attempts: [],
+  saved: false
+};
+
+function researchEnabled(){
+  return !botMode &&
+    roomData?.players?.length === 2 &&
+    roomData.players.every(p => p?.uid && p.uid !== "BOT");
+}
+
+async function saveResearchResult(){
+  if (!researchEnabled() || researchRun.saved || !researchRun.matchStartedAt) return;
+
+  try {
+    const { ref, set } = await import(
+      "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js"
+    );
+
+    const attempts = researchRun.attempts;
+    const correct = attempts.filter(a => a.outcome === "correct").length;
+    const wrong = attempts.filter(a => a.outcome === "wrong").length;
+    const timeout = attempts.filter(a => a.outcome === "timeout").length;
+    const averageMs = attempts.length
+      ? Math.round(attempts.reduce((sum, a) => sum + a.responseTimeMs, 0) / attempts.length)
+      : 0;
+
+    const result = {
+      participantCode: roomData.players[mySlot].name,
+      matchId: matchId,
+      correct: correct,
+      wrong: wrong,
+      timeout: timeout,
+      totalQuestions: attempts.length,
+      averageAnswerTimeMs: averageMs,
+      totalGameTimeMs: Math.max(
+        0,
+        (roomData.finishedAt || Date.now()) - researchRun.matchStartedAt
+      ),
+      attempts: attempts,
+      recordedAt: Date.now()
+    };
+
+    await set(ref(db, "researchResults/" + matchId + "/" + mySlot), result);
+    researchRun.saved = true;
+    console.log("Research result saved.");
+  } catch (error) {
+    console.error("Research result could not be saved:", error);
+  }
+}
+ const $=id=>document.getElementById(id);
 window.addEventListener("error",event=>{
  const msg=event?.message||"Unknown JavaScript error";
  const out=$("scriptStatus");if(out)out.textContent="Game script error: "+msg;
