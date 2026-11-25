@@ -320,7 +320,15 @@ async function newQuestion(){
  $("getQuestionBtn").disabled=true;
  const cat="mixed";let pool=questions.map((q,id)=>({...q,id})).filter(q=>cat==="mixed"||q.c===cat);const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;
  const q=fresh[Math.floor(Math.random()*fresh.length)];const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
- const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await update(roomRef,{status:"answering",question:{...q,options,startedAt:Date.now()},used:[...used,q.id],lastMessage:"Question started."});
+ const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");const startedAt = Date.now();
+
+await update(roomRef,{
+  status:"answering",
+  question:{...q,options,startedAt},
+  used:[...used,q.id],
+  researchStartedAt:roomData.researchStartedAt || startedAt,
+  lastMessage:"Question started."
+});
 }
 async function submitAnswer(choice,timedOut=false){
  if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=='answering')return;answered=true;clearInterval(timerLoop);
