@@ -23,7 +23,7 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
 </head>
 <body>
 <div class="wrap">
- <div class="top"><div><h1>🎲 3R's Snake and Ladder</h1><div class="sub">Rise • Run • Race — Mathematics + Science</div></div><button id="restartBtn" onclick="restart()" disabled>↻ Restart Game</button></div>
+ <div class="top"><div><h1>🎲 3R's Snake and Ladder</h1><div class="sub">Rise • Run • Race — Mathematics + Science</div></div><button id="restartBtn" disabled>↻ Restart Game</button></div>
  <div class="panel" id="setupPanel">
   <h2>🌐 Online Multiplayer</h2>
   <p class="small">Connect, then find an opponent. If nobody is available after 10 seconds, a bot opponent joins automatically.</p>
@@ -35,20 +35,20 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
    <label>Firebase projectId <input id="projectId" value="r-s-7f116" autocomplete="off"></label>
    <label>Firebase appId <input id="appId" value="1:300470219986:web:c785c937a170ba876c690b" autocomplete="off"></label>
   </div>
-  <div class="controls" style="margin-top:10px"><button id="connectBtn" onclick="connectFirebase()">Connect</button><span id="connectionStatus" class="small">Not connected</span></div>
-  <p id="roomStatus" class="status">Connect to Firebase to start.</p>
-  <div class="controls"><button id="findBtn" onclick="findOpponent()" disabled>🔎 Find Opponent</button><button id="cancelBtn" onclick="leaveRoom()" disabled>Cancel / Leave</button></div>
+  <div class="controls" style="margin-top:10px"><button id="connectBtn" type="button">Connect</button><span id="connectionStatus" class="small">Not connected</span></div>
+  <p id="roomStatus" class="status">Connect to Firebase to start.</p><p id="scriptStatus" class="small" role="status" aria-live="polite"></p>
+  <div class="controls"><button id="findBtn" type="button" disabled>🔎 Find Opponent</button><button id="cancelBtn" type="button" disabled>Cancel / Leave</button></div>
  </div>
  <div class="panel" id="turnPanel" style="display:none;text-align:center">
   <h2 id="turnTitle">Your turn</h2>
   <p id="turnHint" class="small">Tap when you are ready.</p>
-  <button id="getQuestionBtn" onclick="newQuestion()" disabled>📝 Get Question</button>
+  <button id="getQuestionBtn" type="button" disabled>📝 Get Question</button>
  </div>
  <div class="board-area"><div id="board" class="board"></div></div>
  <div class="panel"><h2>🏆 Leaderboard</h2><table class="scoreboard"><thead><tr><th>Rank</th><th>Player</th><th>Correct answers</th><th>Square</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table><p class="small">Leaderboard scores are for this game session and reset when Restart is selected.</p></div>
  <div class="panel small"><b>How to play:</b> Two players take turns. Tap Get Question when you are ready. Answer correctly to roll the single die automatically. A wrong answer or timeout ends the turn. Snakes move players down and ladders move them up. First player to reach square 50 wins.</div>
 </div>
-<div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><span id="timerText" class="small">20s</span></div><h2 id="question"></h2><div class="timerbar"><div id="timerFill" class="timerfill"></div></div><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
+<div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><span id="timerText" class="small">20s</span><button id="closeQuestionBtn" type="button" style="background:#68758a">Close</button></div><h2 id="question"></h2><div class="timerbar"><div id="timerFill" class="timerfill"></div></div><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
 <script>
 
 const questions = [
@@ -103,12 +103,21 @@ const questions = [
 {c:"science",q:"A gas has P₁=100 kPa, V₁=3 L, T₁=300 K. If P₂=150 kPa and T₂=450 K, find V₂.",a:"3 L",s:"P₁V₁/T₁=P₂V₂/T₂; V₂=(100·3·450)/(300·150)=3 L"},
 {c:"science",q:"How much heat raises 0.5 kg of water by 10°C? Use c=4200 J/(kg·°C).",a:"21,000 J",s:"Q=mcΔT=0.5(4200)(10)=21,000 J"}
 ];;
- // Three realistic distractors for each question, in the same order as the question bank.
+// Three realistic distractors for each question, in the same order as the question bank.
 const wrongChoices = {0: ["x = 6", "x = 7", "x = 9"], 1: ["x = 3", "x = 19", "x = 20"], 2: ["x = 6", "x = 7", "x = 9"], 3: ["x = 11", "x = 25", "x = 35"], 4: ["x = 5", "x = 7", "x = 11"], 5: ["x = 6", "x = 8", "x = 9"], 6: ["x = 4", "x = 6", "x = 7"], 7: ["x = 4", "x = 5", "x = 7"], 8: ["x = 6", "x = 8", "x = 9"], 9: ["x = 5", "x = 7", "x = 8"], 10: ["x = 4", "x = 6", "x = 7"], 11: ["x = 8", "x = 10", "x = 14"], 12: ["x = 4", "x = 6", "x = 7"], 13: ["x = 5", "x = 7", "x = 8"], 14: ["x = 4", "x = 6", "x = 7"], 15: ["x = 4", "x = 5", "x = 7"], 16: ["x = 2", "x = 4", "x = 5"], 17: ["x = 5", "x = 6", "x = 8"], 18: ["x = 3", "x = 4", "x = 6"], 19: ["x = 2", "x = 4", "x = 6"], 20: ["x = 12", "x = 18", "x = 27"], 21: ["x = 16", "x = 20", "x = 22"], 22: ["x = 10", "x = 15", "x = 18"], 23: ["x = 4", "x = 6", "x = 10"], 24: ["x = 6", "x = 7", "x = 9"], 25: ["x = 7 only", "x = −7 only", "x = 49 or x = −49"], 26: ["x = 4 only", "x = −4 only", "x = 8 or x = −8"], 27: ["x = 2 or x = 3", "x = −2 or x = 3", "x = 2 or x = −3"], 28: ["x = −3 or x = −4", "x = 3 or x = −4", "x = −3 or x = 4"], 29: ["x = 3 only", "x = −3 only", "x = 9 or x = −9"], 30: ["5 m/s²", "3 m/s²", "6 m/s²"], 31: ["8 N", "12 N", "18 N"], 32: ["40 W", "60 W", "72 W"], 33: ["12 J", "18 J", "72 J"], 34: ["15 J", "100 J", "200 J"], 35: ["8 N", "18 N", "800 N"], 36: ["25 J", "29 J", "120 J"], 37: ["9 kg·m/s", "12 kg·m/s", "16 kg·m/s"], 38: ["2.4 g/cm³", "2.7 g/cm²", "3.7 g/cm³"], 39: ["180 Pa", "300 Pa", "1,800 Pa"], 40: ["9 m/s", "15 m/s", "25 m/s"], 41: ["10 Hz", "11 Hz", "15 Hz"], 42: ["3 V", "8 V", "18 V"], 43: ["2 A", "4 A", "16 A"], 44: ["2 Ω", "6 Ω", "24 Ω"], 45: ["12 W", "14 W", "36 W"], 46: ["100 kPa", "150 kPa", "400 kPa"], 47: ["2 L", "2.5 L", "4 L"], 48: ["2 L", "4.5 L", "6 L"], 49: ["2,100 J", "4,200 J", "42,000 J"]};
 
 const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
 let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false, timerLoop=null, animationLock=false, lastPositions=[0,0], botMode=false;
 const $=id=>document.getElementById(id);
+window.addEventListener("error",event=>{
+ const msg=event?.message||"Unknown JavaScript error";
+ const out=$("scriptStatus");if(out)out.textContent="Game script error: "+msg;
+ const status=$("connectionStatus");if(status&&status.textContent==="Not connected")status.textContent="Game script error";
+});
+window.addEventListener("unhandledrejection",event=>{
+ const msg=event?.reason?.message||String(event?.reason||"Unknown error");
+ const out=$("scriptStatus");if(out)out.textContent="Game error: "+msg;
+});
 function playerName(i){return roomData?.players?.[i]?.name || (i===1&&botMode?"3R's Bot":"Player "+(i+1))}
 function setStatus(t){$("roomStatus").textContent=t}
 function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
@@ -151,16 +160,36 @@ function startTimer(){
  tick();timerLoop=setInterval(tick,200);
 }
 async function connectFirebase(){
+ const button=$("connectBtn");
+ if(button.disabled)return;
+ button.disabled=true;
+ $("connectionStatus").textContent="Connecting…";
+ $("scriptStatus").textContent="";
+ setStatus("Connecting to Firebase…");
  try{
-  $("connectionStatus").textContent="Connecting…";
   const cfg={apiKey:$("apiKey").value.trim(),authDomain:$("authDomain").value.trim(),databaseURL:$("databaseURL").value.trim(),projectId:$("projectId").value.trim(),appId:$("appId").value.trim()};
-  if(Object.values(cfg).some(v=>!v))throw new Error("Fill in all five Firebase config fields first.");
-  const {initializeApp,getApps}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js");
-  const {getAuth,signInAnonymously}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js");
-  const {getDatabase}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
-  fb=getApps().length?getApps()[0]:initializeApp(cfg);const auth=getAuth(fb);const cred=await signInAnonymously(auth);authUser=cred.user;db=getDatabase(fb);
-  $("connectionStatus").textContent="Connected ✓";$("findBtn").disabled=false;setStatus("Connected. Tap Find Opponent.");
- }catch(e){$("connectionStatus").textContent="Connection failed";alert("Firebase connection error: "+e.message+"\nCheck your config, Anonymous sign-in, and Realtime Database setup.");}
+  if(Object.values(cfg).some(v=>!v))throw new Error("One or more Firebase config fields are empty.");
+  const [{initializeApp,getApps},{getAuth,signInAnonymously},{getDatabase}]=await Promise.all([
+   import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"),
+   import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js"),
+   import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")
+  ]);
+  const existing=getApps().find(app=>app.name==="[DEFAULT]");
+  fb=existing||initializeApp(cfg);
+  const auth=getAuth(fb);
+  const cred=await signInAnonymously(auth);
+  authUser=cred.user;
+  db=getDatabase(fb,cfg.databaseURL);
+  $("connectionStatus").textContent="Connected ✓";
+  $("findBtn").disabled=false;
+  setStatus("Connected successfully. Tap Find Opponent.");
+ }catch(e){
+  const message=e?.message||String(e);
+  $("connectionStatus").textContent="Connection failed";
+  $("scriptStatus").textContent="Firebase error: "+message;
+  setStatus("Connection failed. Read the error below the status.");
+  console.error("Firebase connection failed:",e);
+ }finally{button.disabled=false;}
 }
 async function findOpponent(){
  if(!db||!authUser||searching||roomRef)return;
@@ -177,8 +206,7 @@ async function findOpponent(){
   setTimeout(async()=>{
    if(!searching||roomRef||Date.now()-searchStarted<9500)return;
    try{
-    await
-     runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};if(cur.waiting?.uid!==authUser.uid)return cur;
+    await runTransaction(queueRef,cur=>{cur=cur||{waiting:null,matches:{}};cur.matches=cur.matches||{};if(cur.waiting?.uid!==authUser.uid)return cur;
      const id="bot_"+authUser.uid+"_"+Date.now();cur.matches[id]={players:[{uid:authUser.uid,name,position:0,correct:0},{uid:"BOT",name:"3R's Bot",position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,bot:true,lastMessage:"No opponent found. Bot joined the game!"};cur.waiting=null;return cur;});
     const latest=await get(queueRef);const hit=findMyMatch(latest.val());if(hit){const [id,m]=hit;await stopQueueWatch();botMode=true;await watchRoom(id,0);}
    }catch(e){setStatus("Could not start bot match: "+e.message);}
@@ -214,7 +242,7 @@ function renderRoom(previous){
  else if(roomData.status==='correct'||roomData.status==='wrong'){
   clearInterval(timerLoop);const q=roomData.question;$('modal').classList.add('show');
   if(q){$('qbadge').textContent=playerName(roomData.turn)+' • '+(q.c==='math'?'Mathematics':'Science')+' • Question '+(q.id+1)+'/50';$('question').textContent=q.q;$('choices').innerHTML='';$('feedback').innerHTML=roomData.status==='correct'?'<div class="feedback-mark" style="color:#159447">✓</div><b>Correct!</b>':'<div class="feedback-mark" style="color:#d83232">✕</div><b>'+(roomData.lastMessage||'Incorrect or time is up.')+'</b>';$('solution').textContent=roomData.status==='correct'?'Solution: '+q.s:'Correct answer: '+q.a+'\nSolution: '+q.s;}
- }else{clearInterval(timerLoop);$('modal').classList.remove('show');currentQuestion=null;}
+}else{clearInterval(timerLoop);$('modal').classList.remove('show');currentQuestion=null;}
  if(botMode&&roomData.turn===1&&roomData.winner==null){if(roomData.status==='ready')setTimeout(()=>botStartQuestion(),650);else if(roomData.status==='answering'&&roomData.question&&!roomData.botAnswering)setTimeout(()=>botAnswer(),2500);}
 }
 function showOnlineQuestion(q,canAnswer){
@@ -242,9 +270,19 @@ async function submitAnswer(choice,timedOut=false){
   await update(roomRef,{status:'wrong',lastMessage:timedOut?'Time is up! The turn passes.':'Incorrect! The turn passes.'});
   await new Promise(r=>setTimeout(r,7000));
   await runTransaction(roomRef,cur=>{if(cur&&cur.status==='wrong'&&cur.turn===mySlot){cur.turn=1-mySlot;cur.status='ready';cur.question=null;cur.lastMessage='Turn passed.';}return cur;});
-  }
+ }
 }
- 
+async function automaticRoll(slot){
+ if(!roomRef||!roomData||roomData.turn!==slot||roomData.status!=="moving")return;
+ const {runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");let result;
+ await runTransaction(roomRef,cur=>{if(!cur||cur.turn!==slot||cur.status!=="moving")return cur;const die=Math.floor(Math.random()*6)+1;const old=cur.players[slot].position||0;let landed=Math.min(50,old+die);let final=landed;let msg=playerName(slot)+" rolled "+die+" and moved from "+old+" to "+landed+".";if(snakes[landed]){final=snakes[landed];msg+=" Snake! Slither down to "+final+".";}else if(ladders[landed]){final=ladders[landed];msg+=" Ladder! Climb up to "+final+".";}cur.players[slot].position=final;cur.lastMessage=msg;cur.die=die;cur.landing=landed;cur.lastMovedPlayer=slot;cur.status=final>=50?"finished":"ready";cur.question=null;if(final>=50)cur.winner=slot;else cur.turn=1-slot;result={old,landed,final,die};return cur;});
+ if(result){setStatus("🎲 Rolled "+result.die+"! "+(snakes[result.landed]?"🐍 Sliding down the snake!":ladders[result.landed]?"🪜 Climbing the ladder!":"Moving across the board…"));}
+}
+async function botStartQuestion(){
+ if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=="ready")return;
+ const pool=questions.map((q,id)=>({...q,id}));const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;const q=fresh[Math.floor(Math.random()*fresh.length)];const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
+ const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await update(roomRef,{status:"answering",question:{...q,options,startedAt:Date.now()},used:[...used,q.id],lastMessage:"Bot is answering."});
+}
 async function botAnswer(){
  if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=='answering'||roomData.botAnswering)return;
  roomData.botAnswering=true;const q=roomData.question;const correct=Math.random()<0.72;
@@ -269,8 +307,18 @@ async function restart(){
  await set(roomRef,{players:roomData.players.map(p=>({...p,position:0,correct:0})),turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"The match was restarted."});
 }
 function closeQuestion(){if(roomData?.status==="answering"&&roomData.turn===mySlot)return;$("modal").classList.remove("show");}
-makeBoard();
+// Bind controls directly. This avoids relying on inline HTML handlers.
+$("connectBtn").addEventListener("click",connectFirebase);
+$("findBtn").addEventListener("click",findOpponent);
+$("cancelBtn").addEventListener("click",leaveRoom);
+$("getQuestionBtn").addEventListener("click",newQuestion);
+$("restartBtn").addEventListener("click",restart);
+$("closeQuestionBtn").addEventListener("click",closeQuestion);
 window.connectFirebase=connectFirebase;window.findOpponent=findOpponent;window.leaveRoom=leaveRoom;window.newQuestion=newQuestion;window.restart=restart;window.closeQuestion=closeQuestion;
+try{makeBoard();$("scriptStatus").textContent="Game script loaded ✓";}
+catch(e){$("scriptStatus").textContent="Game setup error: "+(e?.message||String(e));console.error(e);}
 </script>
 </body>
 </html>
+ 
+ 
