@@ -284,7 +284,9 @@ async function watchRoom(id,slot){
  unsubscribe=onValue(roomRef,snap=>{if(!snap.exists()){setStatus("Match ended or no longer exists.");return;}const next=snap.val();const old=roomData;roomData=next;renderRoom(old);});
 }
 function renderRoom(previous){
- if(!roomData)return;const p=roomData.players||[];const isMyTurn=roomData.turn===mySlot;
+ if(!roomData)return;if (!researchRun.matchStartedAt && roomData.researchStartedAt) {
+  researchRun.matchStartedAt = roomData.researchStartedAt;
+ }const p=roomData.players||[];const isMyTurn=roomData.turn===mySlot;
  if(!$('board').children.length)makeBoard();
  if(previous&&previous.players){p.forEach((pl,i)=>{const from=previous.players[i]?.position||0,to=pl?.position||0;if(to!==from){const landed=roomData.landing&&i===roomData.lastMovedPlayer?roomData.landing:to;animateMove(i,from,landed,to);}});}else paintTokens();
  const rows=[0,1].sort((a,b)=>(p[b]?.correct||0)-(p[a]?.correct||0)||(p[b]?.position||0)-(p[a]?.position||0));
