@@ -280,6 +280,12 @@ async function stopQueueWatch(){if(queueUnsubscribe){queueUnsubscribe();queueUns
 async function watchRoom(id,slot){
  if(unsubscribe)unsubscribe();await stopQueueWatch();const {ref,onValue}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
  matchId=id;mySlot=slot;roomRef=ref(db,"matchmaking/matches/"+id);botMode=id.startsWith("bot_");lastPositions=[0,0];
+
+researchRun = {
+  matchStartedAt: null,
+  attempts: [],
+  saved: false
+};
  $("setupPanel").classList.add("setup-hidden");$("restartBtn").disabled=false;$("cancelBtn").disabled=false;
  unsubscribe=onValue(roomRef,snap=>{if(!snap.exists()){setStatus("Match ended or no longer exists.");return;}const next=snap.val();const old=roomData;roomData=next;renderRoom(old);});
 }
