@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#2196f3">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3R's Snake and Ladder — 50 Questions</title>
@@ -14,7 +12,7 @@ h1{margin:0;font-size:clamp(22px,4vw,32px)}.sub{color:#557;margin:6px 0 14px}
 button,input,select{font:inherit;border-radius:10px;padding:10px;border:1px solid #bdc9dc}
 button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 .status{text-align:center;font-weight:bold;font-size:17px;margin:12px 0}.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;background:#264a7a;padding:5px;border-radius:12px}
+.board{position:relative;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;background:#264a7a;padding:5px;border-radius:12px;overflow:hidden}.cell{position:relative;z-index:1;transition:background .2s}.cell.active-step{background:#fff3a6!important;box-shadow:inset 0 0 0 3px #f5b400}.token{position:relative;z-index:3;display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:22px;transition:transform .15s}.snake-art{display:block;font-size:clamp(18px,3vw,30px);line-height:1;animation:slither 1.2s ease-in-out infinite alternate}.ladder-art{display:block;font-size:clamp(18px,3vw,28px);line-height:1;animation:ladderPulse 1.5s ease-in-out infinite alternate}@keyframes slither{from{transform:translateX(-3px) rotate(-8deg)}to{transform:translateX(3px) rotate(8deg)}}@keyframes ladderPulse{from{transform:translateY(1px)}to{transform:translateY(-3px)}}.timerbar{height:10px;background:#e6edf7;border-radius:10px;overflow:hidden;margin:8px 0}.timerfill{height:100%;width:100%;background:#26a269;transition:width .2s linear}.timerfill.low{background:#e74c3c}.feedback-mark{font-size:42px;font-weight:900;text-align:center;animation:pop .25s ease-out}@keyframes pop{from{transform:scale(.4);opacity:.2}to{transform:scale(1);opacity:1}}.setup-hidden{display:none!important}.board-area{position:relative}.board-art{position:absolute;inset:5px;width:calc(100% - 10px);height:calc(100% - 10px);z-index:2;pointer-events:none;overflow:visible}.snake-path{fill:none;stroke:#df654d;stroke-width:13;stroke-linecap:round;stroke-dasharray:18 8;animation:snakeFlow 1.1s linear infinite}.ladder-rail{stroke:#9b6b35;stroke-width:9;stroke-linecap:round}.ladder-rung{stroke:#d6a45c;stroke-width:6;stroke-linecap:round}@keyframes snakeFlow{to{stroke-dashoffset:-52}}
 .cell{position:relative;min-height:55px;background:#fff;border-radius:5px;padding:4px;font-size:12px;font-weight:bold}.cell:nth-child(odd){background:#f0f8ff}.snake{outline:2px solid #e66}.ladder{outline:2px solid #39a66a}
 .token{display:inline-block;border-radius:20px;color:white;padding:3px 5px;margin:2px;font-size:10px}.p1{background:#e74c3c}.p2{background:#8e44ad}
 .legend{text-align:center;margin:8px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:14px;z-index:5}.modal.show{display:flex}
@@ -26,10 +24,10 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
 <body>
 <div class="wrap">
  <div class="top"><div><h1>🎲 3R's Snake and Ladder</h1><div class="sub">Rise • Run • Race — Mathematics + Science</div></div><button id="restartBtn" onclick="restart()" disabled>↻ Restart Game</button></div>
- <div class="panel">
+ <div class="panel" id="setupPanel">
   <h2>🌐 Online Multiplayer</h2>
-  <p class="small">Connect using your study Firebase project, then tap Find Opponent. The game automatically pairs two waiting participants. No room code is shown.</p>
-  <div class="row">
+  <p class="small">Connect, then find an opponent. If nobody is available after 10 seconds, a bot opponent joins automatically.</p>
+  <div class="row" id="setupFields">
    <label>Your player name <input id="myName" value="Player" maxlength="18"></label>
    <label>Firebase apiKey <input id="apiKey" value="AIzaSyCoCMcgw4nn8I7ioW6xLhrGA9HkIrvwXsY" autocomplete="off"></label>
    <label>Firebase authDomain <input id="authDomain" value="r-s-7f116.firebaseapp.com" autocomplete="off"></label>
@@ -39,14 +37,13 @@ button{background:#2457d6;color:#fff;border:0;font-weight:bold;cursor:pointer}bu
   </div>
   <div class="controls" style="margin-top:10px"><button id="connectBtn" onclick="connectFirebase()">Connect</button><span id="connectionStatus" class="small">Not connected</span></div>
   <p id="roomStatus" class="status">Connect to Firebase to start.</p>
-  <div class="controls"><button id="findBtn" onclick="findOpponent()" disabled>🔎 Find Opponent</button><button id="cancelBtn" onclick="leaveRoom()" disabled>Cancel / Leave</button><label>Question category <select id="category"><option value="mixed">Mixed (Math + Science)</option><option value="math">Mathematics only</option><option value="science">Science only</option></select></label><button id="getQ" onclick="newQuestion()" disabled>🎯 Get Question</button><button id="rollBtn" onclick="roll()" disabled>🎲 Roll Dice</button></div>
-  <div class="legend">🔴 Player 1 &nbsp; 🟣 Player 2 &nbsp; 🪜 Ladder &nbsp; 🐍 Snake</div>
+  <div class="controls"><button id="findBtn" onclick="findOpponent()" disabled>🔎 Find Opponent</button><button id="cancelBtn" onclick="leaveRoom()" disabled>Cancel / Leave</button></div>
  </div>
- <div id="board" class="board"></div>
+ <div class="board-area"><div id="board" class="board"></div></div>
  <div class="panel"><h2>🏆 Leaderboard</h2><table class="scoreboard"><thead><tr><th>Rank</th><th>Player</th><th>Correct answers</th><th>Square</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table><p class="small">Leaderboard scores are for this game session and reset when Restart is selected.</p></div>
  <div class="panel small"><b>How to play:</b> Two players take turns. Choose a question category, answer correctly, then roll the dice. A wrong answer ends the current turn. Snakes move players down and ladders move them up. First player to reach square 50 wins.</div>
 </div>
-<div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><button onclick="closeQuestion()" style="background:#68758a">Close</button></div><h2 id="question"></h2><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
+<div id="modal" class="modal"><div class="card"><div class="row"><span id="qbadge" class="small"></span><span id="timerText" class="small">20s</span></div><h2 id="question"></h2><div class="timerbar"><div id="timerFill" class="timerfill"></div></div><div id="choices" class="choices"></div><div id="feedback"></div><div id="solution" class="small" style="white-space:pre-line;margin-top:10px"></div></div></div>
 <script>
 
 const questions = [
@@ -105,151 +102,56 @@ const questions = [
 const wrongChoices = {0: ["x = 6", "x = 7", "x = 9"], 1: ["x = 3", "x = 19", "x = 20"], 2: ["x = 6", "x = 7", "x = 9"], 3: ["x = 11", "x = 25", "x = 35"], 4: ["x = 5", "x = 7", "x = 11"], 5: ["x = 6", "x = 8", "x = 9"], 6: ["x = 4", "x = 6", "x = 7"], 7: ["x = 4", "x = 5", "x = 7"], 8: ["x = 6", "x = 8", "x = 9"], 9: ["x = 5", "x = 7", "x = 8"], 10: ["x = 4", "x = 6", "x = 7"], 11: ["x = 8", "x = 10", "x = 14"], 12: ["x = 4", "x = 6", "x = 7"], 13: ["x = 5", "x = 7", "x = 8"], 14: ["x = 4", "x = 6", "x = 7"], 15: ["x = 4", "x = 5", "x = 7"], 16: ["x = 2", "x = 4", "x = 5"], 17: ["x = 5", "x = 6", "x = 8"], 18: ["x = 3", "x = 4", "x = 6"], 19: ["x = 2", "x = 4", "x = 6"], 20: ["x = 12", "x = 18", "x = 27"], 21: ["x = 16", "x = 20", "x = 22"], 22: ["x = 10", "x = 15", "x = 18"], 23: ["x = 4", "x = 6", "x = 10"], 24: ["x = 6", "x = 7", "x = 9"], 25: ["x = 7 only", "x = −7 only", "x = 49 or x = −49"], 26: ["x = 4 only", "x = −4 only", "x = 8 or x = −8"], 27: ["x = 2 or x = 3", "x = −2 or x = 3", "x = 2 or x = −3"], 28: ["x = −3 or x = −4", "x = 3 or x = −4", "x = −3 or x = 4"], 29: ["x = 3 only", "x = −3 only", "x = 9 or x = −9"], 30: ["5 m/s²", "3 m/s²", "6 m/s²"], 31: ["8 N", "12 N", "18 N"], 32: ["40 W", "60 W", "72 W"], 33: ["12 J", "18 J", "72 J"], 34: ["15 J", "100 J", "200 J"], 35: ["8 N", "18 N", "800 N"], 36: ["25 J", "29 J", "120 J"], 37: ["9 kg·m/s", "12 kg·m/s", "16 kg·m/s"], 38: ["2.4 g/cm³", "2.7 g/cm²", "3.7 g/cm³"], 39: ["180 Pa", "300 Pa", "1,800 Pa"], 40: ["9 m/s", "15 m/s", "25 m/s"], 41: ["10 Hz", "11 Hz", "15 Hz"], 42: ["3 V", "8 V", "18 V"], 43: ["2 A", "4 A", "16 A"], 44: ["2 Ω", "6 Ω", "24 Ω"], 45: ["12 W", "14 W", "36 W"], 46: ["100 kPa", "150 kPa", "400 kPa"], 47: ["2 L", "2.5 L", "4 L"], 48: ["2 L", "4.5 L", "6 L"], 49: ["2,100 J", "4,200 J", "42,000 J"]};
 
 const snakes={47:19,43:29,36:14,25:7,18:4},ladders={3:15,8:22,16:31,28:40,35:49};
-let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false;
+let fb=null, db=null, authUser=null, roomRef=null, roomData=null, mySlot=null, matchId=null, unsubscribe=null, queueUnsubscribe=null, currentQuestion=null, answered=false, searching=false, timerLoop=null, animationLock=false, lastPositions=[0,0], botMode=false;
 const $=id=>document.getElementById(id);
-function playerName(i){return roomData?.players?.[i]?.name || ("Player "+(i+1))}
+function playerName(i){return roomData?.players?.[i]?.name || (i===1&&botMode?"3R's Bot":"Player "+(i+1))}
 function setStatus(t){$("roomStatus").textContent=t}
 function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function makeBoard(){
+ const board=$("board");board.innerHTML="";
+ // Standard 10-by-5 serpentine route, starting at bottom-left.
+ for(let row=4;row>=0;row--){let nums=Array.from({length:10},(_,i)=>row*10+i+1);if(row%2===1)nums.reverse();
+  nums.forEach(n=>{const c=document.createElement("div");c.className="cell";c.dataset.square=n;
+   let mark=snakes[n]?'<span class="snake-art" aria-label="snake">🐍</span>':ladders[n]?'<span class="ladder-art" aria-label="ladder">🪜</span>':'';
+   c.innerHTML='<span>'+n+'</span>'+mark;board.appendChild(c);});
+ }
+ const ns="http://www.w3.org/2000/svg";const art=document.createElementNS(ns,"svg");art.setAttribute("class","board-art");art.setAttribute("viewBox","0 0 1000 500");art.setAttribute("preserveAspectRatio","none");
+ const xy=n=>{const k=n-1,row=Math.floor(k/10),offset=k%10,col=row%2===0?offset:9-offset;return [col*100+50,450-row*100];};
+ Object.entries(snakes).forEach(([head,tail])=>{const [x1,y1]=xy(+head),[x2,y2]=xy(tail),dx=x2-x1,dy=y2-y1;const d=`M ${x1} ${y1} C ${x1+dx*.45+55} ${y1+dy*.25-35}, ${x1+dx*.55-55} ${y1+dy*.75+35}, ${x2} ${y2}`;const path=document.createElementNS(ns,"path");path.setAttribute("d",d);path.setAttribute("class","snake-path");art.appendChild(path);const headDot=document.createElementNS(ns,"circle");headDot.setAttribute("cx",x1);headDot.setAttribute("cy",y1);headDot.setAttribute("r",15);headDot.setAttribute("fill","#c83f36");art.appendChild(headDot);});
+ Object.entries(ladders).forEach(([bottom,top])=>{const [x1,y1]=xy(+bottom),[x2,y2]=xy(top),dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1,px=-dy/len*13,py=dx/len*13;for(const side of [-1,1]){const rail=document.createElementNS(ns,"line");rail.setAttribute("x1",x1+px*side);rail.setAttribute("y1",y1+py*side);rail.setAttribute("x2",x2+px*side);rail.setAttribute("y2",y2+py*side);rail.setAttribute("class","ladder-rail");art.appendChild(rail);}for(let t=.12;t<.95;t+=.16){const rung=document.createElementNS(ns,"line");rung.setAttribute("x1",x1+dx*t+px);rung.setAttribute("y1",y1+dy*t+py);rung.setAttribute("x2",x1+dx*t-px);rung.setAttribute("y2",y1+dy*t-py);rung.setAttribute("class","ladder-rung");art.appendChild(rung);}});
+ board.appendChild(art);
+}
+function paintTokens(){
+ const board=$("board");board.querySelectorAll(".token").forEach(t=>t.remove());
+ (roomData?.players||[]).forEach((pl,i)=>{if(!pl)return;const cell=board.querySelector('[data-square="'+(pl.position||0)+'"]');if(!cell)return;
+  const token=document.createElement("span");token.className="token p"+(i+1);token.textContent=i===0?"P1":"P2";cell.appendChild(token);
+ });
+}
+async function animateMove(slot,from,to,final){
+ if(animationLock)return;animationLock=true;const board=$("board");
+ const token=document.createElement("span");token.className="token p"+(slot+1);token.textContent=slot===0?"P1":"P2";
+ const first=board.querySelector('[data-square="'+Math.max(1,from)+'"]');if(first)first.appendChild(token);
+ for(let n=Math.max(1,from+1);n<=to;n++){
+  const cell=board.querySelector('[data-square="'+n+'"]');if(!cell)continue;
+  cell.classList.add("active-step");cell.appendChild(token);await new Promise(r=>setTimeout(r,150));cell.classList.remove("active-step");
+ }
+ if(final!==undefined&&final!==to){await new Promise(r=>setTimeout(r,350));const target=board.querySelector('[data-square="'+final+'"]');if(target){target.classList.add("active-step");target.appendChild(token);await new Promise(r=>setTimeout(r,550));target.classList.remove("active-step");}}
+ animationLock=false;paintTokens();
+}
+function startTimer(){
+ clearInterval(timerLoop);const q=roomData?.question;if(!q)return;
+ const tick=()=>{const left=Math.max(0,20-Math.floor((Date.now()-(q.startedAt||Date.now()))/1000));$("timerText").textContent=left+"s";$("timerFill").style.width=(left/20*100)+"%";$("timerFill").classList.toggle("low",left<=5);
+  if(left<=0){clearInterval(timerLoop);if(roomData?.status==="answering"&&roomData.turn===mySlot&&!answered)submitAnswer(null,true);}
+ };
+ tick();timerLoop=setInterval(tick,200);
+}
 async function connectFirebase(){
  try{
   $("connectionStatus").textContent="Connecting…";
   const cfg={apiKey:$("apiKey").value.trim(),authDomain:$("authDomain").value.trim(),databaseURL:$("databaseURL").value.trim(),projectId:$("projectId").value.trim(),appId:$("appId").value.trim()};
-  if(Object.values(cfg).some(v=>!v)){throw new Error("Fill in all five Firebase config fields first.")}
+  if(Object.values(cfg).some(v=>!v))throw new Error("Fill in all five Firebase config fields first.");
   const {initializeApp,getApps}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js");
   const {getAuth,signInAnonymously}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js");
   const {getDatabase}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
-  fb=getApps().length?getApps()[0]:initializeApp(cfg);
-  const auth=getAuth(fb); const cred=await signInAnonymously(auth); authUser=cred.user; db=getDatabase(fb);
-  $("connectionStatus").textContent="Connected ✓";
-  $("findBtn").disabled=false;
-  $("roomStatus").textContent="Connected. Tap Find Opponent when both participants are ready.";
- }catch(e){$("connectionStatus").textContent="Connection failed";alert("Firebase connection error: "+e.message+"\nCheck your config, Anonymous sign-in, and Realtime Database setup.")}
-}
-async function findOpponent(){
- if(!db||!authUser||searching||roomRef)return;
- try{
-  const {ref,runTransaction,onValue,off}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
-  searching=true;$("findBtn").disabled=true;$("cancelBtn").disabled=false;
-  setStatus("🔎 Looking for another participant… Keep this page open.");
-  const queueRef=ref(db,"matchmaking");
-  const name=($("myName").value.trim()||"Player").slice(0,18);
-  await runTransaction(queueRef,cur=>{
-   cur=cur||{waiting:null,matches:{}};
-   cur.matches=cur.matches||{};
-   const waiting=cur.waiting;
-   if(waiting&&waiting.uid!==authUser.uid&&Date.now()-Number(waiting.at||0)<180000){
-    const id="match_"+authUser.uid+"_"+Math.random().toString(36).slice(2,9);
-    cur.matches[id]={players:[{uid:waiting.uid,name:waiting.name,position:0,correct:0},{uid:authUser.uid,name,position:0,correct:0}],turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"Both participants connected. Game started."};
-    cur.waiting=null;
-   }else{
-    cur.waiting={uid:authUser.uid,name,at:Date.now()};
-   }
-   return cur;
-  });
-  const findMyMatch=data=>Object.entries(data?.matches||{}).find(([id,m])=>m?.players?.some(pl=>pl?.uid===authUser.uid));
-  const {get}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
-  let snap=await get(queueRef),found=findMyMatch(snap.val());
-  if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));return;}
-  queueUnsubscribe=onValue(queueRef,async snap=>{
-   const found=findMyMatch(snap.val());
-   if(found){const [id,m]=found;await stopQueueWatch();await watchRoom(id,m.players.findIndex(pl=>pl?.uid===authUser.uid));}
-  });
- }catch(e){searching=false;$("findBtn").disabled=false;$("cancelBtn").disabled=true;setStatus("Matchmaking error: "+e.message);}
-}
-async function stopQueueWatch(){
- if(queueUnsubscribe){queueUnsubscribe();queueUnsubscribe=null;}
- searching=false;
-}
-async function watchRoom(id,slot){
- if(unsubscribe)unsubscribe();
- await stopQueueWatch();
- const {ref,onValue}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
- matchId=id;mySlot=slot;roomRef=ref(db,"matchmaking/matches/"+id);
- $("roomStatus").textContent="Matched! You are Player "+(slot+1)+".";
- $("cancelBtn").disabled=false;$("restartBtn").disabled=false;
- unsubscribe=onValue(roomRef,snap=>{if(!snap.exists()){setStatus("Match ended or no longer exists.");return}roomData=snap.val();renderRoom()});
-}
-function renderRoom(){
- if(!roomData)return;
- const p=roomData.players||[];
- $("roomStatus").textContent="Online match • You are Player "+(mySlot+1)+" • 2/2 participants";
- const board=$("board");board.innerHTML="";
- for(let n=50;n>=1;n--){const c=document.createElement("div");c.className="cell";if(snakes[n])c.classList.add("snake");if(ladders[n])c.classList.add("ladder");c.innerHTML="<span>"+n+(snakes[n]?" 🐍":ladders[n]?" 🪜":"")+"</span>";p.forEach((pl,i)=>{if(pl&&pl.position===n)c.innerHTML+='<span class="token p'+(i+1)+'">'+(i===0?"P1":"P2")+"</span>"});board.appendChild(c)}
- const rows=[0,1].sort((a,b)=>(p[b]?.correct||0)-(p[a]?.correct||0)||(p[b]?.position||0)-(p[a]?.position||0));
- $("leaderboard").innerHTML=rows.map((i,rank)=>`<tr><td>${rank+1}</td><td>${escapeHtml(p[i]?.name||"Waiting…")}</td><td>${p[i]?.correct||0}</td><td>${p[i]?.position||0}</td><td>${roomData.winner===i?"🏆 Winner":""}</td></tr>`).join("");
- const isMyTurn=roomData.turn===mySlot, ready=!!p[1];
- $("getQ").disabled=!(ready&&isMyTurn&&roomData.status==="ready"&&roomData.winner==null);
- $("rollBtn").disabled=!(isMyTurn&&roomData.status==="rolling"&&roomData.winner==null);
- if(roomData.status==="waiting")setStatus("Waiting for another participant…");
- else if(roomData.winner!==null&&roomData.winner!==undefined)setStatus("🏆 "+playerName(roomData.winner)+" wins!");
- else if(roomData.status==="ready")setStatus(isMyTurn?"Your turn! Get a question.":playerName(roomData.turn)+" is choosing a question.");
- else if(roomData.status==="answering")setStatus(isMyTurn?"Your turn: answer the question.":"Waiting for "+playerName(roomData.turn)+" to answer.");
- else if(roomData.status==="rolling")setStatus(isMyTurn?"Correct answer! Roll the dice.":"Waiting for "+playerName(roomData.turn)+" to roll.");
- else if(roomData.status==="wrong")setStatus(roomData.lastMessage||"Wrong answer. Turn passed.");
- if(roomData.status==="answering"&&roomData.question)showOnlineQuestion(roomData.question,isMyTurn);
- else {$("modal").classList.remove("show")}
-}
-function showOnlineQuestion(q,canAnswer){
- if(currentQuestion?.id===q.id&&$("modal").classList.contains("show"))return;
- currentQuestion=q;answered=false;$("qbadge").textContent=playerName(roomData.turn)+" • "+(q.c==="math"?"Mathematics":"Science")+" • Question "+(q.id+1)+"/50";$("question").textContent=q.q;
- const box=$("choices");box.innerHTML="";
- q.options.forEach(option=>{const btn=document.createElement("button");btn.textContent=option;btn.disabled=!canAnswer;btn.onclick=()=>submitAnswer(option);box.appendChild(btn)});
- $("feedback").textContent=canAnswer?"Choose the correct answer.":"Your opponent is answering…";$("solution").textContent="";$("modal").classList.add("show");
-}
-async function newQuestion(){
- if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="ready")return;
- const cat=$("category").value;let pool=questions.map((q,id)=>({...q,id})).filter(q=>cat==="mixed"||q.c===cat);
- const used=roomData.used||[];let fresh=pool.filter(q=>!used.includes(q.id));if(!fresh.length)fresh=pool;
- const q=fresh[Math.floor(Math.random()*fresh.length)];
- const options=[q.a,...wrongChoices[q.id]].sort(()=>Math.random()-.5);
- const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
- await update(roomRef,{status:"answering",question:{...q,options},used:[...used,q.id],lastMessage:"Question selected."});
-}
-async function submitAnswer(choice){
- if(answered||!roomData||roomData.turn!==mySlot||roomData.status!=="answering")return;answered=true;
- const q=roomData.question;const {update}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
- if(choice===q.a){
-  const players=roomData.players;players[mySlot].correct=(players[mySlot].correct||0)+1;
-  await update(roomRef,{players,status:"rolling",lastMessage:"Correct answer! "+playerName(mySlot)+" may roll."});
-  $("feedback").textContent="✅ Correct!";$("solution").textContent="Solution: "+q.s;$("modal").classList.remove("show");
- }else{
-  $("feedback").textContent="❌ Incorrect. Correct answer: "+q.a;$("solution").textContent="Solution: "+q.s;
-  await update(roomRef,{status:"wrong",lastMessage:playerName(mySlot)+" answered incorrectly. Turn passes to the other player."});
-  setTimeout(async()=>{if(roomData?.status==="wrong"&&roomData.turn===mySlot){await update(roomRef,{turn:1-mySlot,status:"ready",question:null,lastMessage:"Turn passed after an incorrect answer."});}},1400);
- }
-}
-async function roll(){
- if(!roomRef||!roomData||roomData.turn!==mySlot||roomData.status!=="rolling")return;
- const die=Math.floor(Math.random()*6)+1;const players=roomData.players;let pos=Math.min(50,(players[mySlot].position||0)+die);let msg=playerName(mySlot)+" rolled "+die+" and moved to square "+pos+".";
- if(snakes[pos]){pos=snakes[pos];msg+=" Snake! Down to "+pos+"."}if(ladders[pos]){pos=ladders[pos];msg+=" Ladder! Up to "+pos+"."}
- players[mySlot].position=pos;
- if(pos>=50){await (await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")).update(roomRef,{players,status:"finished",winner:mySlot,lastMessage:msg});return}
- await (await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")).update(roomRef,{players,turn:1-mySlot,status:"ready",question:null,lastMessage:msg});
-}
-async function leaveRoom(){
- await stopQueueWatch();
- if(unsubscribe){unsubscribe();unsubscribe=null;}
- roomRef=null;roomData=null;mySlot=null;matchId=null;currentQuestion=null;answered=false;
- $("modal").classList.remove("show");$("getQ").disabled=true;$("rollBtn").disabled=true;$("restartBtn").disabled=true;
- $("cancelBtn").disabled=true;$("findBtn").disabled=!db;
- if(db&&authUser){try{const {ref,runTransaction}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");await runTransaction(ref(db,"matchmaking"),cur=>{if(cur?.waiting?.uid===authUser.uid)cur.waiting=null;return cur;});}catch(e){}}
- setStatus("You left the match. Tap Find Opponent to play again.");
-}
-async function restart(){
- if(!roomRef||!roomData||mySlot!==0)return;
- if(!confirm("Restart this match for both players?"))return;
- const {set}=await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js");
- await set(roomRef,{players:roomData.players.map(p=>({...p,position:0,correct:0})),turn:0,status:"ready",question:null,used:[],winner:null,lastMessage:"The match was restarted."});
-}
-function closeQuestion(){if(roomData?.status==="answering"&&roomData.turn===mySlot)return;$("modal").classList.remove("show");}
-window.connectFirebase=connectFirebase;window.findOpponent=findOpponent;window.leaveRoom=leaveRoom;window.newQuestion=newQuestion;window.roll=roll;window.restart=restart;window.closeQuestion=closeQuestion;
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
-  });
-}
-</script>
-</body>
-</html>
+  fb=getApps().length?getApps()[0]:initializeApp(cfg);const auth=getAuth(fb);const cred=await signInAnonymously(auth);authUser=cred.user;db=getDatabase(fb);
+  $("connectionSta
