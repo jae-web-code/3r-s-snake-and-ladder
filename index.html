@@ -244,6 +244,7 @@ async function submitAnswer(choice,timedOut=false){
   await runTransaction(roomRef,cur=>{if(cur&&cur.status==='wrong'&&cur.turn===mySlot){cur.turn=1-mySlot;cur.status='ready';cur.question=null;cur.lastMessage='Turn passed.';}return cur;});
   }
 }
+ 
 async function botAnswer(){
  if(!roomRef||!roomData||roomData.turn!==1||roomData.status!=='answering'||roomData.botAnswering)return;
  roomData.botAnswering=true;const q=roomData.question;const correct=Math.random()<0.72;
